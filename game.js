@@ -55,6 +55,7 @@ const paddle = {
 // THE BRICKS (the list is filled in by makeBricks() in bricks.js)
 // ------------------------------------------------------------
 let bricks = [];
+let score = 0;
 
 
 // ------------------------------------------------------------
@@ -122,12 +123,34 @@ function moveBall() {
 // white shapes.
 // ------------------------------------------------------------
 function draw() {
-  ctx.fillStyle = "black";
+  const background = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+  background.addColorStop(0, "#101d2c");
+  background.addColorStop(1, "#172a38");
+  ctx.fillStyle = background;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  ctx.fillStyle = "white";
-  ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
-  ctx.fillRect(ball.x, ball.y, ball.width, ball.height);
+  ctx.fillStyle = "#b7c8d4";
+  ctx.font = "bold 12px Trebuchet MS, sans-serif";
+  ctx.fillText(`SCORE  ${score}`, 18, 25);
+  ctx.textAlign = "right";
+  ctx.fillText(`BRICKS  ${bricks.length}`, WIDTH - 18, 25);
+  ctx.textAlign = "left";
+
+  const paddleGradient = ctx.createLinearGradient(paddle.x, paddle.y, paddle.x, paddle.y + paddle.height);
+  paddleGradient.addColorStop(0, "#a5f3e7");
+  paddleGradient.addColorStop(1, "#36b7ad");
+  ctx.fillStyle = paddleGradient;
+  ctx.beginPath();
+  ctx.roundRect(paddle.x, paddle.y, paddle.width, paddle.height, 6);
+  ctx.fill();
+
+  ctx.fillStyle = "#fff4c2";
+  ctx.shadowColor = "#ffcc66";
+  ctx.shadowBlur = 14;
+  ctx.beginPath();
+  ctx.arc(ball.x + ball.width / 2, ball.y + ball.height / 2, ball.width / 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
 
   drawBricks();  // bricks.js
 }
@@ -163,6 +186,7 @@ function frame(now) {
 
 function start() {
   bricks = makeBricks();  // bricks.js
+  score = 0;
   resetBall();
   lastTime = performance.now();
   requestAnimationFrame(frame);

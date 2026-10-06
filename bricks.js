@@ -23,6 +23,7 @@ function makeBricks() {
       list.push({
         x: left + col * (BRICK_WIDTH + BRICK_GAP),
         y: BRICKS_TOP + row * (BRICK_HEIGHT + BRICK_GAP),
+        row,
         width: BRICK_WIDTH,
         height: BRICK_HEIGHT
       });
@@ -34,8 +35,16 @@ function makeBricks() {
 
 // Draws every brick in the list.
 function drawBricks() {
-  ctx.fillStyle = "white";
+  const colors = ["#ff765e", "#ffb454", "#f3d56c", "#71d4bd"];
   for (const brick of bricks) {
-    ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+    const gradient = ctx.createLinearGradient(brick.x, brick.y, brick.x, brick.y + brick.height);
+    gradient.addColorStop(0, colors[brick.row]);
+    gradient.addColorStop(1, "#263b4a");
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.roundRect(brick.x, brick.y, brick.width, brick.height, 4);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+    ctx.fillRect(brick.x + 5, brick.y + 3, brick.width - 10, 2);
   }
 }

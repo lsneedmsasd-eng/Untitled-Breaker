@@ -1,4 +1,3 @@
-/* Black and white only. */
 * {
   box-sizing: border-box;
 }
@@ -9,15 +8,26 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #000;
-  color: #fff;
-  font-family: "Courier New", monospace;
+  padding: 24px 16px;
+  background:
+    radial-gradient(ellipse at 50% 5%, rgba(53, 115, 122, 0.22), transparent 55%),
+    #0b121a;
+  color: #e7f0f1;
+  font-family: "Trebuchet MS", sans-serif;
 }
 
 main {
   width: 100%;
-  max-width: 640px;
-  padding: 16px;
+  max-width: 720px;
+}
+
+h1 {
+  margin: 0 0 14px;
+  color: #f2f4dc;
+  font-family: Impact, "Arial Narrow", sans-serif;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 0;
   text-align: center;
 }
 
@@ -25,12 +35,16 @@ canvas {
   display: block;
   width: 100%;
   height: auto;
-  border: 2px solid #fff;
-  background: #000;
+  border: 1px solid #54717c;
+  border-radius: 8px;
+  background: #101d2c;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.42), 0 0 0 5px rgba(111, 187, 176, 0.06);
 }
 
 p {
-  margin: 12px 0 0;
-  font-size: 14px;
+  margin: 14px 0 0;
+  color: #9fb3bf;
+  font-size: 13px;
   line-height: 1.5;
+  text-align: center;
 }
