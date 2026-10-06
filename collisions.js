@@ -76,7 +76,11 @@ function bounceOffBricks() {
       }
     }
 
-    bricks.splice(index, 1);
+    if (brick.hits > 1) {
+      brick.hits--;
+    } else {
+      bricks.splice(index, 1);
+    }
     score += 10;
     break;  // bounce off one brick per update, then stop looking
   }

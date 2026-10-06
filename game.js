@@ -20,6 +20,7 @@ const HEIGHT = canvas.height; // 450
 // A positive vy means the ball is moving DOWN the screen.
 // ------------------------------------------------------------
 const BALL_SPEED = 4;
+let ballSpeed = BALL_SPEED;
 
 const ball = {
   x: 0,
@@ -34,8 +35,8 @@ const ball = {
 function resetBall() {
   ball.x = WIDTH / 2 - ball.width / 2;
   ball.y = HEIGHT / 2 - ball.height / 2;
-  ball.vx = BALL_SPEED;  // right
-  ball.vy = BALL_SPEED;  // down
+  ball.vx = ballSpeed;  // right
+  ball.vy = ballSpeed;  // down
 }
 
 
@@ -56,6 +57,7 @@ const paddle = {
 // ------------------------------------------------------------
 let bricks = [];
 let score = 0;
+let wave = 1;
 
 
 // ------------------------------------------------------------
@@ -88,6 +90,11 @@ function update() {
   bounceOffWalls();   // collisions.js
   bounceOffPaddle();  // collisions.js
   bounceOffBricks();  // collisions.js
+  updateBrickWeapons(STEP);  // bricks.js
+
+  if (bricks.length === 0) {
+    startNextWave();
+  }
 
   // The ball fell off the bottom: back to the center.
   if (ball.y > HEIGHT) {
@@ -132,9 +139,14 @@ function draw() {
   ctx.fillStyle = "#b7c8d4";
   ctx.font = "bold 12px Trebuchet MS, sans-serif";
   ctx.fillText(`SCORE  ${score}`, 18, 25);
+  ctx.textAlign = "center";
+  ctx.fillText(`WAVE  ${wave}`, WIDTH / 2, 25);
   ctx.textAlign = "right";
   ctx.fillText(`BRICKS  ${bricks.length}`, WIDTH - 18, 25);
   ctx.textAlign = "left";
+
+  drawBricks();  // bricks.js
+  drawBrickWeapons();  // bricks.js
 
   const paddleGradient = ctx.createLinearGradient(paddle.x, paddle.y, paddle.x, paddle.y + paddle.height);
   paddleGradient.addColorStop(0, "#a5f3e7");
@@ -151,8 +163,16 @@ function draw() {
   ctx.arc(ball.x + ball.width / 2, ball.y + ball.height / 2, ball.width / 2, 0, Math.PI * 2);
   ctx.fill();
   ctx.shadowBlur = 0;
+}
 
-  drawBricks();  // bricks.js
+function startNextWave() {
+  wave++;
+  ballSpeed = BALL_SPEED + Math.min(wave - 1, 10) * 0.4;
+  bricks = makeBricks(wave);
+  brickBeam = null;
+  beamCooldown = Math.max(900, 1800 - (wave - 1) * 60);
+  paddle.x = WIDTH / 2 - paddle.width / 2;
+  resetBall();
 }
 
 
@@ -185,8 +205,12 @@ function frame(now) {
 }
 
 function start() {
-  bricks = makeBricks();  // bricks.js
+  wave = 1;
+  ballSpeed = BALL_SPEED;
+  bricks = makeBricks(wave);  // bricks.js
   score = 0;
+  brickBeam = null;
+  beamCooldown = 1800;
   resetBall();
   lastTime = performance.now();
   requestAnimationFrame(frame);
