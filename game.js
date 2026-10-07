@@ -80,6 +80,7 @@ const paddle = {
   speed: 6
 };
 const AIM_RANGE = 180;
+const AIM_COOLDOWN = 15000;
 
 
 // ------------------------------------------------------------
@@ -91,6 +92,7 @@ let wave = 1;
 let lives = 3;
 let gameState = "menu";
 let selectedTarget = null;
+let aimCooldown = 0;
 let particlesEnabled = true;
 let particles = [];
 let pausedState = "playing";
@@ -145,6 +147,9 @@ canvas.addEventListener("click", function (event) {
   if (gameState !== "playing") {
     return;
   }
+  if (aimCooldown > 0) {
+    return;
+  }
 
   const point = getCanvasPoint(event);
   const target = bricks.find((brick) =>
@@ -155,6 +160,7 @@ canvas.addEventListener("click", function (event) {
   const paddleCenter = paddle.x + paddle.width / 2;
   if (target && Math.abs(target.x + target.width / 2 - paddleCenter) <= AIM_RANGE) {
     selectedTarget = target;
+    aimCooldown = AIM_COOLDOWN;
   } else {
     selectedTarget = null;
   }
@@ -175,6 +181,7 @@ function update() {
     return;
   }
 
+  aimCooldown = Math.max(0, aimCooldown - STEP);
   movePaddle();
   updatePaddleGrow(STEP);
   moveBall();
@@ -321,6 +328,11 @@ function draw() {
   ctx.textAlign = "right";
   ctx.fillText(`LIVES  ${lives}   BRICKS  ${bricks.length}`, WIDTH - 18, 25);
   ctx.textAlign = "left";
+  if (aimCooldown > 0) {
+    ctx.textAlign = "center";
+    ctx.fillText(`AIM ${Math.ceil(aimCooldown / 1000)}s`, WIDTH / 2, 43);
+    ctx.textAlign = "left";
+  }
   if (paddleGrowTimer > 0) {
     ctx.fillStyle = "#a5f3e7";
     ctx.fillText(`WIDE ${Math.ceil(paddleGrowTimer / 1000)}s`, 18, 43);
@@ -409,6 +421,7 @@ function startGame() {
   score = 0;
   lives = 3;
   selectedTarget = null;
+  aimCooldown = 0;
   particles = [];
   paddle.width = PADDLE_BASE_WIDTH;
   paddleGrowTimer = 0;
