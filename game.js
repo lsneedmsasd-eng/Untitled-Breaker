@@ -418,6 +418,9 @@ document.getElementById("speed-select").addEventListener("change", (event) => {
   ballSpeed = BALL_SPEED * speedSetting + Math.max(wave - 1, 0) * 0.4;
 });
 
-// Keep the ball visible at the canvas center before the first game begins.
-resetBall();
-requestAnimationFrame(frame);
+// Start only after bricks.js and collisions.js have finished loading.
+window.addEventListener("load", function () {
+  bricks = makeBricks(wave);
+  resetBall();
+  requestAnimationFrame(frame);
+});

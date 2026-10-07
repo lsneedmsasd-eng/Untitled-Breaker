@@ -53,8 +53,7 @@ canvas {
   display: grid;
   place-items: center;
   padding: 18px;
-  background: rgba(5, 12, 18, 0.76);
-  backdrop-filter: blur(3px);
+  background: rgba(5, 12, 18, 0.28);
 }
 
 .screen[hidden] {
