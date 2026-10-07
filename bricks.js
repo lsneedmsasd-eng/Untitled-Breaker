@@ -14,7 +14,9 @@ function makeBricks(currentWave) {
   const list = [];
   const totalWidth = BRICK_COLUMNS * BRICK_WIDTH + (BRICK_COLUMNS - 1) * BRICK_GAP;
   const left = (WIDTH - totalWidth) / 2;
-  const count = Math.min(MAX_BRICKS, 32 + (currentWave - 1) * 14);
+  const desiredCount = Math.min(MAX_BRICKS, 32 + (currentWave - 1) * 14);
+  const maxFullRows = Math.floor(MAX_BRICKS / BRICK_COLUMNS) * BRICK_COLUMNS;
+  const count = Math.min(maxFullRows, Math.ceil(desiredCount / BRICK_COLUMNS) * BRICK_COLUMNS);
   const giantAnchors = currentWave >= 5 ? [17, 43, 69] : currentWave >= 3 ? [17, 43] : [17];
   const giantStarts = new Set();
   const giantCells = new Set();
@@ -37,6 +39,7 @@ function makeBricks(currentWave) {
     }
     const row = Math.floor(index / BRICK_COLUMNS);
     const col = index % BRICK_COLUMNS;
+    const shooterColumn = (row * 5 + 2) % BRICK_COLUMNS;
     const type = giantStarts.has(index)
       ? "giant"
       : index % 32 === 8
@@ -45,7 +48,7 @@ function makeBricks(currentWave) {
           ? "grow"
           : index % 32 === 21
             ? "slow"
-            : currentWave >= 2 && index % 13 === 6
+            : currentWave >= 2 && col === shooterColumn
               ? "shooter"
               : currentWave >= 2 && index % 13 === 2
                 ? "projectile"
