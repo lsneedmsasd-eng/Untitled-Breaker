@@ -53,9 +53,7 @@ function drawBricks() {
     gradient.addColorStop(0, color);
     gradient.addColorStop(1, "#263b4a");
     ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.roundRect(brick.x, brick.y, brick.width, brick.height, 3);
-    ctx.fill();
+    fillRoundedRect(brick.x, brick.y, brick.width, brick.height, 3);
     ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
     ctx.fillRect(brick.x + 4, brick.y + 2, brick.width - 8, 2);
 

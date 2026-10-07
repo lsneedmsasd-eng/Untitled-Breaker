@@ -34,10 +34,34 @@ const ball = {
 
 // Put the ball in the center and reset its speed and direction.
 function resetBall() {
-  ball.x = WIDTH / 2 - ball.width / 2;
-  ball.y = HEIGHT / 2 - ball.height / 2;
-  ball.vx = ballSpeed;  // right
-  ball.vy = ballSpeed;  // down
+  ball.vx = 0;
+  ball.vy = 0;
+  positionBallOnPaddle();
+}
+
+function positionBallOnPaddle() {
+  ball.x = paddle.x + paddle.width / 2 - ball.width / 2;
+  ball.y = paddle.y - ball.height - 2;
+}
+
+function fillRoundedRect(x, y, width, height, radius) {
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(x, y, width, height, radius);
+  } else {
+    ctx.rect(x, y, width, height);
+  }
+  ctx.fill();
+}
+
+function launchBall() {
+  if (gameState !== "ready") {
+    return;
+  }
+  const horizontalSpeed = (Math.random() * 0.5 - 0.25) * ballSpeed;
+  ball.vx = horizontalSpeed;
+  ball.vy = -Math.sqrt(ballSpeed * ballSpeed - horizontalSpeed * horizontalSpeed);
+  showScreen("playing");
 }
 
 
@@ -65,6 +89,7 @@ let gameState = "menu";
 let selectedTarget = null;
 let particlesEnabled = true;
 let particles = [];
+let pausedState = "playing";
 
 
 // ------------------------------------------------------------
@@ -77,12 +102,21 @@ document.addEventListener("keydown", function (event) {
   const key = event.key.toLowerCase();
   keys[key] = true;
   if ((key === "escape" || key === "p") && gameState === "playing") {
+    pausedState = gameState;
+    showScreen("paused");
+  } else if ((key === "escape" || key === "p") && gameState === "ready") {
+    pausedState = gameState;
     showScreen("paused");
   } else if ((key === "escape" || key === "p") && gameState === "paused") {
-    showScreen("playing");
+    showScreen(pausedState);
+  } else if (key === " " && gameState === "ready") {
+    launchBall();
   }
   // Stop the arrow keys from scrolling the page.
   if (event.key.startsWith("Arrow")) {
+    event.preventDefault();
+  }
+  if (event.key === " ") {
     event.preventDefault();
   }
 });
@@ -100,6 +134,10 @@ function getCanvasPoint(event) {
 }
 
 canvas.addEventListener("click", function (event) {
+  if (gameState === "ready") {
+    launchBall();
+    return;
+  }
   if (gameState !== "playing") {
     return;
   }
@@ -124,6 +162,11 @@ canvas.addEventListener("click", function (event) {
 // what they touched.
 // ------------------------------------------------------------
 function update() {
+  if (gameState === "ready") {
+    movePaddle();
+    positionBallOnPaddle();
+    return;
+  }
   if (gameState !== "playing") {
     return;
   }
@@ -156,6 +199,7 @@ function loseLife() {
     return;
   }
   resetBall();
+  showScreen("ready");
 }
 
 function updateParticles(deltaTime) {
@@ -264,9 +308,7 @@ function draw() {
   paddleGradient.addColorStop(0, "#a5f3e7");
   paddleGradient.addColorStop(1, "#36b7ad");
   ctx.fillStyle = paddleGradient;
-  ctx.beginPath();
-  ctx.roundRect(paddle.x, paddle.y, paddle.width, paddle.height, 6);
-  ctx.fill();
+  fillRoundedRect(paddle.x, paddle.y, paddle.width, paddle.height, 6);
 
   ctx.fillStyle = "#fff4c2";
   ctx.shadowColor = "#ffcc66";
@@ -288,6 +330,7 @@ function startNextWave() {
   beamCooldown = Math.max(900, 1800 - (wave - 1) * 60);
   paddle.x = WIDTH / 2 - paddle.width / 2;
   resetBall();
+  showScreen("ready");
 }
 
 
@@ -322,7 +365,7 @@ function frame(now) {
 function showScreen(state) {
   gameState = state;
   const screen = state === "paused" ? "pause" : state;
-  for (const name of ["menu", "settings", "pause", "gameover"]) {
+  for (const name of ["menu", "ready", "settings", "pause", "gameover"]) {
     document.getElementById(`screen-${name}`).hidden = name !== screen;
   }
 }
@@ -338,17 +381,22 @@ function startGame() {
   brickBeam = null;
   projectiles = [];
   beamCooldown = 1800;
+  paddle.x = WIDTH / 2 - paddle.width / 2;
   resetBall();
   lastTime = performance.now();
-  showScreen("playing");
+  showScreen("ready");
 }
 
 let settingsReturnState = "menu";
 document.getElementById("play-button").addEventListener("click", startGame);
 document.getElementById("restart-button").addEventListener("click", startGame);
-document.getElementById("resume-button").addEventListener("click", () => showScreen("playing"));
+document.getElementById("launch-button").addEventListener("click", launchBall);
+document.getElementById("resume-button").addEventListener("click", () => showScreen(pausedState));
 document.getElementById("pause-button").addEventListener("click", () => {
-  if (gameState === "playing") showScreen("paused");
+  if (gameState === "playing" || gameState === "ready") {
+    pausedState = gameState;
+    showScreen("paused");
+  }
 });
 document.getElementById("open-settings").addEventListener("click", () => {
   settingsReturnState = "menu";
