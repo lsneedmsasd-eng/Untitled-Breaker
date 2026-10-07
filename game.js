@@ -20,7 +20,8 @@ const HEIGHT = canvas.height; // 450
 // A positive vy means the ball is moving DOWN the screen.
 // ------------------------------------------------------------
 const BALL_SPEED = 4;
-let ballSpeed = BALL_SPEED;
+let speedSetting = 1;
+let ballSpeed = BALL_SPEED * speedSetting;
 
 const ball = {
   x: 0,
@@ -60,8 +61,10 @@ let bricks = [];
 let score = 0;
 let wave = 1;
 let lives = 3;
-let gameOver = false;
+let gameState = "menu";
 let selectedTarget = null;
+let particlesEnabled = true;
+let particles = [];
 
 
 // ------------------------------------------------------------
@@ -73,8 +76,10 @@ const keys = {};
 document.addEventListener("keydown", function (event) {
   const key = event.key.toLowerCase();
   keys[key] = true;
-  if (gameOver && key === "r") {
-    start();
+  if ((key === "escape" || key === "p") && gameState === "playing") {
+    showScreen("paused");
+  } else if ((key === "escape" || key === "p") && gameState === "paused") {
+    showScreen("playing");
   }
   // Stop the arrow keys from scrolling the page.
   if (event.key.startsWith("Arrow")) {
@@ -95,7 +100,7 @@ function getCanvasPoint(event) {
 }
 
 canvas.addEventListener("click", function (event) {
-  if (gameOver) {
+  if (gameState !== "playing") {
     return;
   }
 
@@ -119,7 +124,7 @@ canvas.addEventListener("click", function (event) {
 // what they touched.
 // ------------------------------------------------------------
 function update() {
-  if (gameOver) {
+  if (gameState !== "playing") {
     return;
   }
 
@@ -130,6 +135,7 @@ function update() {
   bounceOffPaddle();  // collisions.js
   bounceOffBricks();  // collisions.js
   updateBrickWeapons(STEP);  // bricks.js
+  updateParticles(STEP);
 
   if (bricks.length === 0) {
     startNextWave();
@@ -145,10 +151,60 @@ function loseLife() {
   lives--;
   selectedTarget = null;
   if (lives <= 0) {
-    gameOver = true;
+    document.getElementById("final-score").textContent = `Final score: ${score}`;
+    showScreen("gameover");
     return;
   }
   resetBall();
+}
+
+function updateParticles(deltaTime) {
+  const stepScale = deltaTime / STEP;
+  for (const particle of particles) {
+    particle.x += particle.vx * stepScale;
+    particle.y += particle.vy * stepScale;
+    particle.vy += 0.08 * stepScale;
+    particle.life -= deltaTime;
+  }
+  particles = particles.filter((particle) => particle.life > 0);
+}
+
+function spawnBrickParticles(brick) {
+  if (!particlesEnabled) {
+    return;
+  }
+
+  const colors = ["#ff765e", "#ffb454", "#f3d56c", "#71d4bd"];
+  const color = brick.type === "shooter"
+    ? "#f05b70"
+    : brick.type === "projectile"
+      ? "#65d5e8"
+      : colors[brick.row % colors.length];
+
+  for (let index = 0; index < 12; index++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 2.8;
+    const maxLife = 320 + Math.random() * 300;
+    particles.push({
+      x: brick.x + brick.width / 2,
+      y: brick.y + brick.height / 2,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size: 2 + Math.random() * 2.5,
+      color,
+      life: maxLife,
+      maxLife
+    });
+  }
+}
+
+function drawParticles() {
+  for (const particle of particles) {
+    ctx.globalAlpha = Math.max(0, particle.life / particle.maxLife);
+    ctx.fillStyle = particle.color;
+    ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
+  }
+  ctx.globalAlpha = 1;
 }
 
 function movePaddle() {
@@ -196,6 +252,7 @@ function draw() {
 
   drawBricks();  // bricks.js
   drawBrickWeapons();  // bricks.js
+  drawParticles();
 
   if (selectedTarget && bricks.includes(selectedTarget)) {
     ctx.strokeStyle = "#fff4c2";
@@ -219,22 +276,11 @@ function draw() {
   ctx.fill();
   ctx.shadowBlur = 0;
 
-  if (gameOver) {
-    ctx.fillStyle = "rgba(5, 12, 18, 0.78)";
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-    ctx.fillStyle = "#fff4c2";
-    ctx.textAlign = "center";
-    ctx.font = "bold 30px Trebuchet MS, sans-serif";
-    ctx.fillText("GAME OVER", WIDTH / 2, HEIGHT / 2 - 8);
-    ctx.font = "16px Trebuchet MS, sans-serif";
-    ctx.fillText("Press R to restart", WIDTH / 2, HEIGHT / 2 + 24);
-    ctx.textAlign = "left";
-  }
 }
 
 function startNextWave() {
   wave++;
-  ballSpeed = BALL_SPEED + Math.min(wave - 1, 10) * 0.4;
+  ballSpeed = BALL_SPEED * speedSetting + Math.min(wave - 1, 10) * 0.4;
   bricks = makeBricks(wave);
   brickBeam = null;
   projectiles = [];
@@ -273,21 +319,57 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-function start() {
+function showScreen(state) {
+  gameState = state;
+  const screen = state === "paused" ? "pause" : state;
+  for (const name of ["menu", "settings", "pause", "gameover"]) {
+    document.getElementById(`screen-${name}`).hidden = name !== screen;
+  }
+}
+
+function startGame() {
   wave = 1;
-  ballSpeed = BALL_SPEED;
+  ballSpeed = BALL_SPEED * speedSetting;
   bricks = makeBricks(wave);  // bricks.js
   score = 0;
   lives = 3;
-  gameOver = false;
   selectedTarget = null;
+  particles = [];
   brickBeam = null;
   projectiles = [];
   beamCooldown = 1800;
   resetBall();
   lastTime = performance.now();
-  requestAnimationFrame(frame);
+  showScreen("playing");
 }
 
-// Wait until all three script files have loaded, then start.
-window.addEventListener("load", start);
+let settingsReturnState = "menu";
+document.getElementById("play-button").addEventListener("click", startGame);
+document.getElementById("restart-button").addEventListener("click", startGame);
+document.getElementById("resume-button").addEventListener("click", () => showScreen("playing"));
+document.getElementById("pause-button").addEventListener("click", () => {
+  if (gameState === "playing") showScreen("paused");
+});
+document.getElementById("open-settings").addEventListener("click", () => {
+  settingsReturnState = "menu";
+  showScreen("settings");
+});
+document.getElementById("pause-settings").addEventListener("click", () => {
+  settingsReturnState = "paused";
+  showScreen("settings");
+});
+document.getElementById("settings-back").addEventListener("click", () => showScreen(settingsReturnState));
+document.getElementById("menu-button").addEventListener("click", () => showScreen("menu"));
+document.getElementById("gameover-menu").addEventListener("click", () => showScreen("menu"));
+document.getElementById("effects-toggle").addEventListener("change", (event) => {
+  particlesEnabled = event.target.checked;
+  if (!particlesEnabled) particles = [];
+});
+document.getElementById("speed-select").addEventListener("change", (event) => {
+  speedSetting = Number(event.target.value);
+  ballSpeed = BALL_SPEED * speedSetting + Math.max(wave - 1, 0) * 0.4;
+});
+
+// Keep the ball visible at the canvas center before the first game begins.
+resetBall();
+requestAnimationFrame(frame);

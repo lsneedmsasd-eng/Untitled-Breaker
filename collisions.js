@@ -92,6 +92,7 @@ function bounceOffBricks() {
     if (brick.hits > 1) {
       brick.hits--;
     } else {
+      spawnBrickParticles(brick);
       if (brick.type === "projectile") {
         spawnBrickProjectiles(brick);
       }

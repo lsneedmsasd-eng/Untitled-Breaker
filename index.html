@@ -9,8 +9,59 @@
 <body>
   <main>
     <h1>BLOCK BREAKER</h1>
-    <canvas id="game" width="600" height="450" aria-label="Block Breaker game"></canvas>
-    <p>Move the paddle with ← → or A / D. Click a nearby brick to aim on your next paddle hit. Paddle contact slows shots.</p>
+    <div class="game-shell">
+      <canvas id="game" width="600" height="450" aria-label="Block Breaker game"></canvas>
+      <section class="screen" id="screen-menu" aria-labelledby="menu-title">
+        <div class="menu-panel">
+          <p class="eyebrow">ARCADE CLASSIC</p>
+          <h2 id="menu-title">BLOCK BREAKER</h2>
+          <p class="screen-copy">Clear the field. Keep the ball alive.</p>
+          <button class="primary-button" id="play-button" type="button">Play</button>
+          <button class="secondary-button" id="open-settings" type="button">Settings</button>
+        </div>
+      </section>
+      <section class="screen" id="screen-settings" aria-labelledby="settings-title" hidden>
+        <div class="menu-panel">
+          <p class="eyebrow">PREFERENCES</p>
+          <h2 id="settings-title">SETTINGS</h2>
+          <label class="setting-row" for="effects-toggle">
+            <span>Break particles</span>
+            <input id="effects-toggle" type="checkbox" checked>
+          </label>
+          <label class="setting-row" for="speed-select">
+            <span>Ball speed</span>
+            <select id="speed-select">
+              <option value="0.8">Slow</option>
+              <option value="1" selected>Normal</option>
+              <option value="1.25">Fast</option>
+            </select>
+          </label>
+          <button class="primary-button" id="settings-back" type="button">Done</button>
+        </div>
+      </section>
+      <section class="screen" id="screen-pause" aria-labelledby="pause-title" hidden>
+        <div class="menu-panel">
+          <p class="eyebrow">GAME PAUSED</p>
+          <h2 id="pause-title">TAKE A BREATHER</h2>
+          <button class="primary-button" id="resume-button" type="button">Resume</button>
+          <button class="secondary-button" id="pause-settings" type="button">Settings</button>
+          <button class="text-button" id="menu-button" type="button">Main menu</button>
+        </div>
+      </section>
+      <section class="screen" id="screen-gameover" aria-labelledby="gameover-title" hidden>
+        <div class="menu-panel">
+          <p class="eyebrow">RUN COMPLETE</p>
+          <h2 id="gameover-title">GAME OVER</h2>
+          <p class="screen-copy" id="final-score"></p>
+          <button class="primary-button" id="restart-button" type="button">Play again</button>
+          <button class="text-button" id="gameover-menu" type="button">Main menu</button>
+        </div>
+      </section>
+    </div>
+    <div class="game-footer">
+      <p>Move with ← → or A / D. Click a nearby brick to aim your next shot.</p>
+      <button id="pause-button" type="button" aria-label="Pause game" title="Pause game">Ⅱ</button>
+    </div>
   </main>
 
   <!-- The order matters: game.js goes first because the other files use its settings. -->
