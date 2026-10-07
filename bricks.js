@@ -21,9 +21,11 @@ function makeBricks(currentWave) {
     const col = index % BRICK_COLUMNS;
     const type = currentWave >= 2 && index % 13 === 6
       ? "shooter"
-      : currentWave >= 3 && index % 5 === 0
-        ? "armored"
-        : "normal";
+      : currentWave >= 2 && index % 13 === 2
+        ? "projectile"
+        : currentWave >= 3 && index % 5 === 0
+          ? "armored"
+          : "normal";
 
     list.push({
       x: left + col * (BRICK_WIDTH + BRICK_GAP),
@@ -42,7 +44,11 @@ function makeBricks(currentWave) {
 function drawBricks() {
   const colors = ["#ff765e", "#ffb454", "#f3d56c", "#71d4bd"];
   for (const brick of bricks) {
-    const color = brick.type === "shooter" ? "#f05b70" : colors[brick.row % colors.length];
+    const color = brick.type === "shooter"
+      ? "#f05b70"
+      : brick.type === "projectile"
+        ? "#65d5e8"
+        : colors[brick.row % colors.length];
     const gradient = ctx.createLinearGradient(brick.x, brick.y, brick.x, brick.y + brick.height);
     gradient.addColorStop(0, color);
     gradient.addColorStop(1, "#263b4a");
@@ -56,6 +62,11 @@ function drawBricks() {
     if (brick.type === "shooter") {
       ctx.fillStyle = "#fff0d1";
       ctx.fillRect(brick.x + brick.width / 2 - 5, brick.y + 6, 10, 3);
+    } else if (brick.type === "projectile") {
+      ctx.fillStyle = "#e4fbff";
+      ctx.beginPath();
+      ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, 3, 0, Math.PI * 2);
+      ctx.fill();
     } else if (brick.hits > 1) {
       ctx.fillStyle = "#eff4f3";
       ctx.fillRect(brick.x + 7, brick.y + 7, 5, 3);
@@ -66,8 +77,24 @@ function drawBricks() {
 
 let brickBeam = null;
 let beamCooldown = 1800;
+let projectiles = [];
+
+function spawnBrickProjectiles(brick) {
+  for (const offset of [-12, 0, 12]) {
+    projectiles.push({
+      x: brick.x + brick.width / 2 + offset,
+      y: brick.y + brick.height,
+      radius: 4,
+      speed: 2.6,
+      slowTimer: 0,
+      touchingPaddle: false
+    });
+  }
+}
 
 function updateBrickWeapons(deltaTime) {
+  updateBrickProjectiles(deltaTime);
+
   if (brickBeam) {
     brickBeam.timer -= deltaTime;
     if (brickBeam.state === "charging") {
@@ -82,8 +109,7 @@ function updateBrickWeapons(deltaTime) {
     } else {
       if (!brickBeam.hitPaddle && boxesTouch(paddle, brickBeam)) {
         brickBeam.hitPaddle = true;
-        score = Math.max(0, score - 25);
-        resetBall();
+        loseLife();
       }
       if (brickBeam.timer <= 0) {
         brickBeam = null;
@@ -98,10 +124,11 @@ function updateBrickWeapons(deltaTime) {
     return;
   }
 
-  const source = bricks.find((brick) => brick.type === "shooter");
-  if (!source) {
+  const shooters = bricks.filter((brick) => brick.type === "shooter");
+  if (shooters.length === 0) {
     return;
   }
+  const source = shooters[Math.floor(Math.random() * shooters.length)];
 
   const width = 92;
   const x = Math.max(0, Math.min(WIDTH - width, source.x + source.width / 2 - width / 2));
@@ -117,7 +144,39 @@ function updateBrickWeapons(deltaTime) {
   };
 }
 
+function updateBrickProjectiles(deltaTime) {
+  const stepScale = deltaTime / STEP;
+  for (const projectile of projectiles) {
+    if (projectile.slowTimer > 0) {
+      projectile.slowTimer = Math.max(0, projectile.slowTimer - deltaTime);
+    }
+    const speed = projectile.speed * (projectile.slowTimer > 0 ? 0.35 : 1);
+    projectile.y += speed * stepScale;
+
+    const touchesPaddle =
+      projectile.x + projectile.radius > paddle.x &&
+      projectile.x - projectile.radius < paddle.x + paddle.width &&
+      projectile.y + projectile.radius > paddle.y &&
+      projectile.y - projectile.radius < paddle.y + paddle.height;
+    if (touchesPaddle && !projectile.touchingPaddle) {
+      projectile.slowTimer = 1600;
+    }
+    projectile.touchingPaddle = touchesPaddle;
+  }
+  projectiles = projectiles.filter((projectile) => projectile.y - projectile.radius <= HEIGHT);
+}
+
 function drawBrickWeapons() {
+  for (const projectile of projectiles) {
+    ctx.fillStyle = projectile.slowTimer > 0 ? "#b5f4ff" : "#53cde2";
+    ctx.shadowColor = "#53cde2";
+    ctx.shadowBlur = 9;
+    ctx.beginPath();
+    ctx.arc(projectile.x, projectile.y, projectile.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+
   if (!brickBeam) {
     return;
   }

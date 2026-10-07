@@ -58,6 +58,9 @@ const paddle = {
 let bricks = [];
 let score = 0;
 let wave = 1;
+let lives = 3;
+let gameOver = false;
+let selectedTarget = null;
 
 
 // ------------------------------------------------------------
@@ -68,6 +71,9 @@ const keys = {};
 
 document.addEventListener("keydown", function (event) {
   keys[event.key.toLowerCase()] = true;
+  if (gameOver && event.key.toLowerCase() === "r") {
+    start();
+  }
   // Stop the arrow keys from scrolling the page.
   if (event.key.startsWith("Arrow")) {
     event.preventDefault();
@@ -78,12 +84,40 @@ document.addEventListener("keyup", function (event) {
   keys[event.key.toLowerCase()] = false;
 });
 
+canvas.addEventListener("click", function (event) {
+  if (gameOver) {
+    return;
+  }
+
+  const bounds = canvas.getBoundingClientRect();
+  const targetX = (event.clientX - bounds.left) * WIDTH / bounds.width;
+  const targetY = (event.clientY - bounds.top) * HEIGHT / bounds.height;
+  const target = bricks.find((brick) =>
+    targetX >= brick.x && targetX <= brick.x + brick.width &&
+    targetY >= brick.y && targetY <= brick.y + brick.height
+  );
+
+  if (target) {
+    selectedTarget = target;
+    const deltaX = target.x + target.width / 2 - (ball.x + ball.width / 2);
+    const deltaY = target.y + target.height / 2 - (ball.y + ball.height / 2);
+    const distance = Math.hypot(deltaX, deltaY) || 1;
+    const speed = ballSpeed * Math.SQRT2;
+    ball.vx = deltaX / distance * speed;
+    ball.vy = deltaY / distance * speed;
+  }
+});
+
 
 // ------------------------------------------------------------
 // UPDATE: runs 60 times every second. Move things, then check
 // what they touched.
 // ------------------------------------------------------------
 function update() {
+  if (gameOver) {
+    return;
+  }
+
   movePaddle();
   moveBall();
 
@@ -96,10 +130,20 @@ function update() {
     startNextWave();
   }
 
-  // The ball fell off the bottom: back to the center.
+  // Losing the ball costs a life.
   if (ball.y > HEIGHT) {
-    resetBall();
+    loseLife();
   }
+}
+
+function loseLife() {
+  lives--;
+  selectedTarget = null;
+  if (lives <= 0) {
+    gameOver = true;
+    return;
+  }
+  resetBall();
 }
 
 function movePaddle() {
@@ -142,11 +186,17 @@ function draw() {
   ctx.textAlign = "center";
   ctx.fillText(`WAVE  ${wave}`, WIDTH / 2, 25);
   ctx.textAlign = "right";
-  ctx.fillText(`BRICKS  ${bricks.length}`, WIDTH - 18, 25);
+  ctx.fillText(`LIVES  ${lives}   BRICKS  ${bricks.length}`, WIDTH - 18, 25);
   ctx.textAlign = "left";
 
   drawBricks();  // bricks.js
   drawBrickWeapons();  // bricks.js
+
+  if (selectedTarget && bricks.includes(selectedTarget)) {
+    ctx.strokeStyle = "#fff4c2";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(selectedTarget.x - 2, selectedTarget.y - 2, selectedTarget.width + 4, selectedTarget.height + 4);
+  }
 
   const paddleGradient = ctx.createLinearGradient(paddle.x, paddle.y, paddle.x, paddle.y + paddle.height);
   paddleGradient.addColorStop(0, "#a5f3e7");
@@ -163,6 +213,18 @@ function draw() {
   ctx.arc(ball.x + ball.width / 2, ball.y + ball.height / 2, ball.width / 2, 0, Math.PI * 2);
   ctx.fill();
   ctx.shadowBlur = 0;
+
+  if (gameOver) {
+    ctx.fillStyle = "rgba(5, 12, 18, 0.78)";
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    ctx.fillStyle = "#fff4c2";
+    ctx.textAlign = "center";
+    ctx.font = "bold 30px Trebuchet MS, sans-serif";
+    ctx.fillText("GAME OVER", WIDTH / 2, HEIGHT / 2 - 8);
+    ctx.font = "16px Trebuchet MS, sans-serif";
+    ctx.fillText("Press R to restart", WIDTH / 2, HEIGHT / 2 + 24);
+    ctx.textAlign = "left";
+  }
 }
 
 function startNextWave() {
@@ -170,6 +232,8 @@ function startNextWave() {
   ballSpeed = BALL_SPEED + Math.min(wave - 1, 10) * 0.4;
   bricks = makeBricks(wave);
   brickBeam = null;
+  projectiles = [];
+  selectedTarget = null;
   beamCooldown = Math.max(900, 1800 - (wave - 1) * 60);
   paddle.x = WIDTH / 2 - paddle.width / 2;
   resetBall();
@@ -209,7 +273,11 @@ function start() {
   ballSpeed = BALL_SPEED;
   bricks = makeBricks(wave);  // bricks.js
   score = 0;
+  lives = 3;
+  gameOver = false;
+  selectedTarget = null;
   brickBeam = null;
+  projectiles = [];
   beamCooldown = 1800;
   resetBall();
   lastTime = performance.now();

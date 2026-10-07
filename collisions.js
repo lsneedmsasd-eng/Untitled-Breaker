@@ -79,6 +79,12 @@ function bounceOffBricks() {
     if (brick.hits > 1) {
       brick.hits--;
     } else {
+      if (brick.type === "projectile") {
+        spawnBrickProjectiles(brick);
+      }
+      if (brick === selectedTarget) {
+        selectedTarget = null;
+      }
       bricks.splice(index, 1);
     }
     score += 10;
