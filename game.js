@@ -50,6 +50,8 @@ const paddle = {
   height: 12,
   speed: 6
 };
+const AIM_RANGE = 180;
+let mousePaddleX = null;
 
 
 // ------------------------------------------------------------
@@ -70,8 +72,12 @@ let selectedTarget = null;
 const keys = {};
 
 document.addEventListener("keydown", function (event) {
-  keys[event.key.toLowerCase()] = true;
-  if (gameOver && event.key.toLowerCase() === "r") {
+  const key = event.key.toLowerCase();
+  keys[key] = true;
+  if (key === "arrowleft" || key === "arrowright" || key === "a" || key === "d") {
+    mousePaddleX = null;
+  }
+  if (gameOver && key === "r") {
     start();
   }
   // Stop the arrow keys from scrolling the page.
@@ -84,27 +90,36 @@ document.addEventListener("keyup", function (event) {
   keys[event.key.toLowerCase()] = false;
 });
 
+function getCanvasPoint(event) {
+  const bounds = canvas.getBoundingClientRect();
+  return {
+    x: (event.clientX - bounds.left) * WIDTH / bounds.width,
+    y: (event.clientY - bounds.top) * HEIGHT / bounds.height
+  };
+}
+
+canvas.addEventListener("mousemove", function (event) {
+  if (!gameOver) {
+    mousePaddleX = getCanvasPoint(event).x - paddle.width / 2;
+  }
+});
+
 canvas.addEventListener("click", function (event) {
   if (gameOver) {
     return;
   }
 
-  const bounds = canvas.getBoundingClientRect();
-  const targetX = (event.clientX - bounds.left) * WIDTH / bounds.width;
-  const targetY = (event.clientY - bounds.top) * HEIGHT / bounds.height;
+  const point = getCanvasPoint(event);
   const target = bricks.find((brick) =>
-    targetX >= brick.x && targetX <= brick.x + brick.width &&
-    targetY >= brick.y && targetY <= brick.y + brick.height
+    point.x >= brick.x && point.x <= brick.x + brick.width &&
+    point.y >= brick.y && point.y <= brick.y + brick.height
   );
 
-  if (target) {
+  const paddleCenter = paddle.x + paddle.width / 2;
+  if (target && Math.abs(target.x + target.width / 2 - paddleCenter) <= AIM_RANGE) {
     selectedTarget = target;
-    const deltaX = target.x + target.width / 2 - (ball.x + ball.width / 2);
-    const deltaY = target.y + target.height / 2 - (ball.y + ball.height / 2);
-    const distance = Math.hypot(deltaX, deltaY) || 1;
-    const speed = ballSpeed * Math.SQRT2;
-    ball.vx = deltaX / distance * speed;
-    ball.vy = deltaY / distance * speed;
+  } else {
+    selectedTarget = null;
   }
 });
 
@@ -147,11 +162,15 @@ function loseLife() {
 }
 
 function movePaddle() {
-  if (keys["arrowleft"] || keys["a"]) {
-    paddle.x = paddle.x - paddle.speed;
-  }
-  if (keys["arrowright"] || keys["d"]) {
-    paddle.x = paddle.x + paddle.speed;
+  if (mousePaddleX !== null) {
+    paddle.x = mousePaddleX;
+  } else {
+    if (keys["arrowleft"] || keys["a"]) {
+      paddle.x = paddle.x - paddle.speed;
+    }
+    if (keys["arrowright"] || keys["d"]) {
+      paddle.x = paddle.x + paddle.speed;
+    }
   }
 
   // Keep the paddle on the screen.
