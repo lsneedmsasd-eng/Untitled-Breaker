@@ -51,7 +51,6 @@ const paddle = {
   speed: 6
 };
 const AIM_RANGE = 180;
-let mousePaddleX = null;
 
 
 // ------------------------------------------------------------
@@ -74,9 +73,6 @@ const keys = {};
 document.addEventListener("keydown", function (event) {
   const key = event.key.toLowerCase();
   keys[key] = true;
-  if (key === "arrowleft" || key === "arrowright" || key === "a" || key === "d") {
-    mousePaddleX = null;
-  }
   if (gameOver && key === "r") {
     start();
   }
@@ -97,12 +93,6 @@ function getCanvasPoint(event) {
     y: (event.clientY - bounds.top) * HEIGHT / bounds.height
   };
 }
-
-canvas.addEventListener("mousemove", function (event) {
-  if (!gameOver) {
-    mousePaddleX = getCanvasPoint(event).x - paddle.width / 2;
-  }
-});
 
 canvas.addEventListener("click", function (event) {
   if (gameOver) {
@@ -162,15 +152,11 @@ function loseLife() {
 }
 
 function movePaddle() {
-  if (mousePaddleX !== null) {
-    paddle.x = mousePaddleX;
-  } else {
-    if (keys["arrowleft"] || keys["a"]) {
-      paddle.x = paddle.x - paddle.speed;
-    }
-    if (keys["arrowright"] || keys["d"]) {
-      paddle.x = paddle.x + paddle.speed;
-    }
+  if (keys["arrowleft"] || keys["a"]) {
+    paddle.x = paddle.x - paddle.speed;
+  }
+  if (keys["arrowright"] || keys["d"]) {
+    paddle.x = paddle.x + paddle.speed;
   }
 
   // Keep the paddle on the screen.
