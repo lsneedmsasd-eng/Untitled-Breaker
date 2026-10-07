@@ -93,7 +93,11 @@ function bounceOffBricks() {
       brick.hits--;
     } else {
       spawnBrickParticles(brick);
-      if (brick.type === "projectile") {
+      if (brick.type === "heart") {
+        grantHeart();
+      } else if (brick.type === "grow") {
+        activatePaddleGrow();
+      } else if (brick.type === "projectile") {
         spawnBrickProjectiles(brick);
       }
       if (brick === selectedTarget) {

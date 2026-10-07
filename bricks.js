@@ -19,13 +19,17 @@ function makeBricks(currentWave) {
   for (let index = 0; index < count; index++) {
     const row = Math.floor(index / BRICK_COLUMNS);
     const col = index % BRICK_COLUMNS;
-    const type = currentWave >= 2 && index % 13 === 6
-      ? "shooter"
-      : currentWave >= 2 && index % 13 === 2
-        ? "projectile"
-        : currentWave >= 3 && index % 5 === 0
-          ? "armored"
-          : "normal";
+    const type = index % 32 === 8
+      ? "heart"
+      : index % 32 === 11
+        ? "grow"
+        : currentWave >= 2 && index % 13 === 6
+          ? "shooter"
+          : currentWave >= 2 && index % 13 === 2
+            ? "projectile"
+            : currentWave >= 3 && index % 5 === 0
+              ? "armored"
+              : "normal";
 
     list.push({
       x: left + col * (BRICK_WIDTH + BRICK_GAP),
@@ -44,7 +48,11 @@ function makeBricks(currentWave) {
 function drawBricks() {
   const colors = ["#ff765e", "#ffb454", "#f3d56c", "#71d4bd"];
   for (const brick of bricks) {
-    const color = brick.type === "shooter"
+    const color = brick.type === "heart"
+      ? "#f05b78"
+      : brick.type === "grow"
+        ? "#55cbb2"
+        : brick.type === "shooter"
       ? "#f05b70"
       : brick.type === "projectile"
         ? "#65d5e8"
@@ -65,6 +73,14 @@ function drawBricks() {
       ctx.beginPath();
       ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, 3, 0, Math.PI * 2);
       ctx.fill();
+    } else if (brick.type === "heart" || brick.type === "grow") {
+      ctx.save();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(brick.type === "heart" ? "♥" : "↔", brick.x + brick.width / 2, brick.y + brick.height / 2);
+      ctx.restore();
     } else if (brick.hits > 1) {
       ctx.fillStyle = "#eff4f3";
       ctx.fillRect(brick.x + 7, brick.y + 7, 5, 3);

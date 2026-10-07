@@ -22,6 +22,10 @@ const HEIGHT = canvas.height; // 450
 const BALL_SPEED = 4;
 let speedSetting = 1;
 let ballSpeed = BALL_SPEED * speedSetting;
+const PADDLE_BASE_WIDTH = 90;
+const MAX_LIVES = 5;
+const PADDLE_GROW_DURATION = 8000;
+let paddleGrowTimer = 0;
 
 const ball = {
   x: 0,
@@ -71,7 +75,7 @@ function launchBall() {
 const paddle = {
   x: WIDTH / 2 - 45,
   y: HEIGHT - 30,
-  width: 90,
+  width: PADDLE_BASE_WIDTH,
   height: 12,
   speed: 6
 };
@@ -172,6 +176,7 @@ function update() {
   }
 
   movePaddle();
+  updatePaddleGrow(STEP);
   moveBall();
 
   bounceOffWalls();   // collisions.js
@@ -200,6 +205,29 @@ function loseLife() {
   }
   resetBall();
   showScreen("ready");
+}
+
+function grantHeart() {
+  lives = Math.min(MAX_LIVES, lives + 1);
+}
+
+function activatePaddleGrow() {
+  const center = paddle.x + paddle.width / 2;
+  paddle.width = PADDLE_BASE_WIDTH * 1.6;
+  paddle.x = Math.max(0, Math.min(WIDTH - paddle.width, center - paddle.width / 2));
+  paddleGrowTimer = PADDLE_GROW_DURATION;
+}
+
+function updatePaddleGrow(deltaTime) {
+  if (paddleGrowTimer <= 0) {
+    return;
+  }
+  paddleGrowTimer = Math.max(0, paddleGrowTimer - deltaTime);
+  if (paddleGrowTimer === 0) {
+    const center = paddle.x + paddle.width / 2;
+    paddle.width = PADDLE_BASE_WIDTH;
+    paddle.x = Math.max(0, Math.min(WIDTH - paddle.width, center - paddle.width / 2));
+  }
 }
 
 function updateParticles(deltaTime) {
@@ -293,6 +321,10 @@ function draw() {
   ctx.textAlign = "right";
   ctx.fillText(`LIVES  ${lives}   BRICKS  ${bricks.length}`, WIDTH - 18, 25);
   ctx.textAlign = "left";
+  if (paddleGrowTimer > 0) {
+    ctx.fillStyle = "#a5f3e7";
+    ctx.fillText(`WIDE ${Math.ceil(paddleGrowTimer / 1000)}s`, 18, 43);
+  }
 
   drawBricks();  // bricks.js
   drawBrickWeapons();  // bricks.js
@@ -378,6 +410,8 @@ function startGame() {
   lives = 3;
   selectedTarget = null;
   particles = [];
+  paddle.width = PADDLE_BASE_WIDTH;
+  paddleGrowTimer = 0;
   brickBeam = null;
   projectiles = [];
   beamCooldown = 1800;
