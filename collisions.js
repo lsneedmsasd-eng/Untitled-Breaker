@@ -40,6 +40,7 @@ function bounceOffWalls() {
 // when it is falling onto the paddle.
 function bounceOffPaddle() {
   if (boxesTouch(ball, paddle) && ball.vy > 0) {
+    playSound("paddle");
     ball.y = paddle.y - ball.height;  // sit on top of the paddle
     const targetIsNearby = selectedTarget &&
       bricks.includes(selectedTarget) &&
@@ -91,12 +92,16 @@ function bounceOffBricks() {
 
     if (brick.hits > 1) {
       brick.hits--;
+      playSound("brick");
     } else {
+      playSound(brick.type === "giant" ? "giant" : brick.type === "heart" || brick.type === "grow" || brick.type === "slow" ? brick.type : "brick");
       spawnBrickParticles(brick);
       if (brick.type === "heart") {
         grantHeart();
       } else if (brick.type === "grow") {
         activatePaddleGrow();
+      } else if (brick.type === "slow") {
+        applyBallSlow();
       } else if (brick.type === "projectile") {
         spawnBrickProjectiles(brick);
       }

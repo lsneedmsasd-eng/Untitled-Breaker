@@ -15,30 +15,52 @@ function makeBricks(currentWave) {
   const totalWidth = BRICK_COLUMNS * BRICK_WIDTH + (BRICK_COLUMNS - 1) * BRICK_GAP;
   const left = (WIDTH - totalWidth) / 2;
   const count = Math.min(MAX_BRICKS, 32 + (currentWave - 1) * 14);
+  const giantAnchors = currentWave >= 5 ? [17, 43, 69] : currentWave >= 3 ? [17, 43] : [17];
+  const giantStarts = new Set();
+  const giantCells = new Set();
+
+  for (const anchor of giantAnchors) {
+    const col = anchor % BRICK_COLUMNS;
+    const coveredCells = [anchor, anchor + 1, anchor + BRICK_COLUMNS, anchor + BRICK_COLUMNS + 1];
+    if (col >= BRICK_COLUMNS - 1 || coveredCells.some((cell) => cell >= count)) {
+      continue;
+    }
+    giantStarts.add(anchor);
+    for (const cell of coveredCells) {
+      giantCells.add(cell);
+    }
+  }
 
   for (let index = 0; index < count; index++) {
+    if (giantCells.has(index) && !giantStarts.has(index)) {
+      continue;
+    }
     const row = Math.floor(index / BRICK_COLUMNS);
     const col = index % BRICK_COLUMNS;
-    const type = index % 32 === 8
-      ? "heart"
-      : index % 32 === 11
-        ? "grow"
-        : currentWave >= 2 && index % 13 === 6
-          ? "shooter"
-          : currentWave >= 2 && index % 13 === 2
-            ? "projectile"
-            : currentWave >= 3 && index % 5 === 0
-              ? "armored"
-              : "normal";
+    const type = giantStarts.has(index)
+      ? "giant"
+      : index % 32 === 8
+        ? "heart"
+        : index % 32 === 11
+          ? "grow"
+          : index % 32 === 21
+            ? "slow"
+            : currentWave >= 2 && index % 13 === 6
+              ? "shooter"
+              : currentWave >= 2 && index % 13 === 2
+                ? "projectile"
+                : currentWave >= 3 && index % 5 === 0
+                  ? "armored"
+                  : "normal";
 
     list.push({
       x: left + col * (BRICK_WIDTH + BRICK_GAP),
       y: BRICKS_TOP + row * (BRICK_HEIGHT + BRICK_ROW_GAP),
       row,
       type,
-      hits: type === "armored" ? 2 : 1,
-      width: BRICK_WIDTH,
-      height: BRICK_HEIGHT
+      hits: type === "giant" ? 4 : type === "armored" ? 2 : 1,
+      width: type === "giant" ? BRICK_WIDTH * 2 + BRICK_GAP : BRICK_WIDTH,
+      height: type === "giant" ? BRICK_HEIGHT * 2 + BRICK_ROW_GAP : BRICK_HEIGHT
     });
   }
 
@@ -52,11 +74,15 @@ function drawBricks() {
       ? "#f05b78"
       : brick.type === "grow"
         ? "#55cbb2"
+        : brick.type === "slow"
+          ? "#789be8"
+          : brick.type === "giant"
+            ? "#f29b55"
         : brick.type === "shooter"
-      ? "#f05b70"
-      : brick.type === "projectile"
-        ? "#65d5e8"
-        : colors[brick.row % colors.length];
+          ? "#f05b70"
+          : brick.type === "projectile"
+            ? "#65d5e8"
+            : colors[brick.row % colors.length];
     const gradient = ctx.createLinearGradient(brick.x, brick.y, brick.x, brick.y + brick.height);
     gradient.addColorStop(0, color);
     gradient.addColorStop(1, "#263b4a");
@@ -73,13 +99,14 @@ function drawBricks() {
       ctx.beginPath();
       ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, 3, 0, Math.PI * 2);
       ctx.fill();
-    } else if (brick.type === "heart" || brick.type === "grow") {
+    } else if (brick.type === "heart" || brick.type === "grow" || brick.type === "slow" || brick.type === "giant") {
       ctx.save();
       ctx.fillStyle = "#ffffff";
-      ctx.font = "12px sans-serif";
+      ctx.font = brick.type === "slow" ? "8px sans-serif" : "12px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(brick.type === "heart" ? "♥" : "↔", brick.x + brick.width / 2, brick.y + brick.height / 2);
+      const symbol = brick.type === "heart" ? "♥" : brick.type === "grow" ? "↔" : brick.type === "slow" ? "SLOW" : "4";
+      ctx.fillText(symbol, brick.x + brick.width / 2, brick.y + brick.height / 2);
       ctx.restore();
     } else if (brick.hits > 1) {
       ctx.fillStyle = "#eff4f3";

@@ -26,6 +26,62 @@ const PADDLE_BASE_WIDTH = 90;
 const MAX_LIVES = 5;
 const PADDLE_GROW_DURATION = 8000;
 let paddleGrowTimer = 0;
+const BALL_SLOW_FACTOR = 0.65;
+const BALL_SLOW_DURATION = 6000;
+let ballSlowTimer = 0;
+let soundEnabled = true;
+let audioContext = null;
+
+const SOUND_PRESETS = {
+  brick: { frequency: 310, duration: 0.07, waveform: "triangle" },
+  giant: { frequency: 150, duration: 0.16, waveform: "square" },
+  paddle: { frequency: 520, duration: 0.08, waveform: "sine" },
+  heart: { frequency: 790, duration: 0.16, waveform: "sine" },
+  grow: { frequency: 430, duration: 0.14, waveform: "triangle" },
+  slow: { frequency: 240, duration: 0.2, waveform: "sawtooth" },
+  launch: { frequency: 360, duration: 0.12, waveform: "triangle" },
+  lifeLost: { frequency: 170, duration: 0.24, waveform: "sawtooth" }
+};
+
+function initializeAudio() {
+  if (!soundEnabled || audioContext) {
+    return;
+  }
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (AudioContextClass) {
+    audioContext = new AudioContextClass();
+  }
+}
+
+function playSound(name) {
+  if (!soundEnabled) {
+    return;
+  }
+  initializeAudio();
+  if (!audioContext) {
+    return;
+  }
+  if (audioContext.state === "suspended") {
+    audioContext.resume();
+  }
+
+  const preset = SOUND_PRESETS[name];
+  if (!preset) {
+    return;
+  }
+  const now = audioContext.currentTime;
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  oscillator.type = preset.waveform;
+  oscillator.frequency.setValueAtTime(preset.frequency, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.035, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + preset.duration);
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + preset.duration);
+}
 
 const ball = {
   x: 0,
@@ -40,6 +96,7 @@ const ball = {
 function resetBall() {
   ball.vx = 0;
   ball.vy = 0;
+  ballSlowTimer = 0;
   positionBallOnPaddle();
 }
 
@@ -66,6 +123,7 @@ function launchBall() {
   ball.vx = horizontalSpeed;
   ball.vy = -Math.sqrt(ballSpeed * ballSpeed - horizontalSpeed * horizontalSpeed);
   showScreen("playing");
+  playSound("launch");
 }
 
 
@@ -184,6 +242,7 @@ function update() {
   aimCooldown = Math.max(0, aimCooldown - STEP);
   movePaddle();
   updatePaddleGrow(STEP);
+  updateBallSlow(STEP);
   moveBall();
 
   bounceOffWalls();   // collisions.js
@@ -204,6 +263,7 @@ function update() {
 
 function loseLife() {
   lives--;
+  playSound("lifeLost");
   selectedTarget = null;
   if (lives <= 0) {
     document.getElementById("final-score").textContent = `Final score: ${score}`;
@@ -237,6 +297,25 @@ function updatePaddleGrow(deltaTime) {
   }
 }
 
+function applyBallSlow() {
+  if (ballSlowTimer <= 0) {
+    ball.vx *= BALL_SLOW_FACTOR;
+    ball.vy *= BALL_SLOW_FACTOR;
+  }
+  ballSlowTimer = BALL_SLOW_DURATION;
+}
+
+function updateBallSlow(deltaTime) {
+  if (ballSlowTimer <= 0) {
+    return;
+  }
+  ballSlowTimer = Math.max(0, ballSlowTimer - deltaTime);
+  if (ballSlowTimer === 0) {
+    ball.vx /= BALL_SLOW_FACTOR;
+    ball.vy /= BALL_SLOW_FACTOR;
+  }
+}
+
 function updateParticles(deltaTime) {
   const stepScale = deltaTime / STEP;
   for (const particle of particles) {
@@ -258,6 +337,14 @@ function spawnBrickParticles(brick) {
     ? "#f05b70"
     : brick.type === "projectile"
       ? "#65d5e8"
+      : brick.type === "heart"
+        ? "#f05b78"
+        : brick.type === "grow"
+          ? "#55cbb2"
+          : brick.type === "slow"
+            ? "#789be8"
+            : brick.type === "giant"
+              ? "#f29b55"
       : colors[brick.row % colors.length];
 
   for (let index = 0; index < 12; index++) {
@@ -337,6 +424,12 @@ function draw() {
     ctx.fillStyle = "#a5f3e7";
     ctx.fillText(`WIDE ${Math.ceil(paddleGrowTimer / 1000)}s`, 18, 43);
   }
+  if (ballSlowTimer > 0) {
+    ctx.fillStyle = "#b8ccff";
+    ctx.textAlign = "right";
+    ctx.fillText(`SLOW ${Math.ceil(ballSlowTimer / 1000)}s`, WIDTH - 18, 43);
+    ctx.textAlign = "left";
+  }
 
   drawBricks();  // bricks.js
   drawBrickWeapons();  // bricks.js
@@ -415,6 +508,7 @@ function showScreen(state) {
 }
 
 function startGame() {
+  initializeAudio();
   wave = 1;
   ballSpeed = BALL_SPEED * speedSetting;
   bricks = makeBricks(wave);  // bricks.js
@@ -459,6 +553,10 @@ document.getElementById("gameover-menu").addEventListener("click", () => showScr
 document.getElementById("effects-toggle").addEventListener("change", (event) => {
   particlesEnabled = event.target.checked;
   if (!particlesEnabled) particles = [];
+});
+document.getElementById("sound-toggle").addEventListener("change", (event) => {
+  soundEnabled = event.target.checked;
+  if (soundEnabled) initializeAudio();
 });
 document.getElementById("speed-select").addEventListener("change", (event) => {
   speedSetting = Number(event.target.value);
