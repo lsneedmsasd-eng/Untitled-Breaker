@@ -20,6 +20,10 @@ const HEIGHT = canvas.height; // 450
 // A positive vy means the ball is moving DOWN the screen.
 // ------------------------------------------------------------
 const BALL_SPEED = 4;
+const CAMPAIGN_LEVELS = 50;
+const CAMPAIGN_SAVE_KEY = "block-breaker-campaign-v1";
+let gameMode = null;
+let lastCampaignSave = 0;
 let speedSetting = 1;
 let ballSpeed = BALL_SPEED * speedSetting;
 const PADDLE_BASE_WIDTH = 90;
@@ -272,6 +276,9 @@ function loseLife() {
   playSound("lifeLost");
   selectedTarget = null;
   if (lives <= 0) {
+    if (gameMode === "campaign") {
+      clearCampaignSave();
+    }
     document.getElementById("final-score").textContent = `Final score: ${score}`;
     showScreen("gameover");
     return;
@@ -430,7 +437,8 @@ function draw() {
   ctx.font = "bold 12px Trebuchet MS, sans-serif";
   ctx.fillText(`SCORE  ${score}`, 18, 25);
   ctx.textAlign = "center";
-  ctx.fillText(`WAVE  ${wave}`, WIDTH / 2, 25);
+  const modeLabel = gameMode === "endless" ? `ENDLESS ${wave}` : `LEVEL ${wave}/${CAMPAIGN_LEVELS}`;
+  ctx.fillText(modeLabel, WIDTH / 2, 25);
   ctx.textAlign = "right";
   ctx.fillText(`LIVES  ${lives}   BRICKS  ${bricks.length}`, WIDTH - 18, 25);
   ctx.textAlign = "left";
@@ -477,6 +485,12 @@ function draw() {
 }
 
 function startNextWave() {
+  if (gameMode === "campaign" && wave >= CAMPAIGN_LEVELS) {
+    clearCampaignSave();
+    document.getElementById("victory-score").textContent = `Final score: ${score}`;
+    showScreen("victory");
+    return;
+  }
   wave++;
   ballSpeed = BALL_SPEED * speedSetting + Math.min(wave - 1, 10) * 0.4;
   bricks = makeBricks(wave);
@@ -487,6 +501,7 @@ function startNextWave() {
   paddle.x = WIDTH / 2 - paddle.width / 2;
   resetBall();
   showScreen("ready");
+  saveCampaign();
 }
 
 
@@ -514,6 +529,11 @@ function frame(now) {
     leftover = leftover - STEP;
   }
 
+  if (gameMode === "campaign" && now - lastCampaignSave >= 1000) {
+    saveCampaign();
+    lastCampaignSave = now;
+  }
+
   draw();
   requestAnimationFrame(frame);
 }
@@ -521,36 +541,132 @@ function frame(now) {
 function showScreen(state) {
   gameState = state;
   const screen = state === "paused" ? "pause" : state;
-  for (const name of ["menu", "ready", "settings", "pause", "gameover"]) {
+  for (const name of ["menu", "ready", "settings", "pause", "gameover", "victory"]) {
     document.getElementById(`screen-${name}`).hidden = name !== screen;
   }
 }
 
-function startGame() {
+function loadCampaignSave() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CAMPAIGN_SAVE_KEY));
+    if (saved?.version !== 1 || saved.wave < 1 || saved.wave > CAMPAIGN_LEVELS ||
+      !Array.isArray(saved.bricks) || !saved.ball || !saved.paddle) {
+      return null;
+    }
+    return saved;
+  } catch {
+    return null;
+  }
+}
+
+function saveCampaign() {
+  if (gameMode !== "campaign" || ["menu", "gameover", "victory"].includes(gameState)) {
+    return;
+  }
+
+  const beamSave = brickBeam
+    ? { ...brickBeam, sourceIndex: bricks.indexOf(brickBeam.source), source: undefined }
+    : null;
+  const saved = {
+    version: 1,
+    wave,
+    score,
+    lives,
+    speedSetting,
+    bricks,
+    ball: { x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy },
+    paddle: { x: paddle.x, width: paddle.width },
+    selectedTargetIndex: bricks.indexOf(selectedTarget),
+    aimCooldown,
+    paddleGrowTimer,
+    paddleSlowTimer,
+    ballSlowTimer,
+    resumeState: gameState === "playing" ? "playing" : "ready",
+    projectiles,
+    brickBeam: beamSave,
+    beamCooldown
+  };
+
+  try {
+    localStorage.setItem(CAMPAIGN_SAVE_KEY, JSON.stringify(saved));
+    document.getElementById("continue-button").hidden = false;
+  } catch {
+    return;
+  }
+}
+
+function clearCampaignSave() {
+  try {
+    localStorage.removeItem(CAMPAIGN_SAVE_KEY);
+    document.getElementById("continue-button").hidden = true;
+  } catch {
+    return;
+  }
+}
+
+function startGame(mode = "campaign", saved = null) {
   initializeAudio();
-  wave = 1;
-  ballSpeed = BALL_SPEED * speedSetting;
-  bricks = makeBricks(wave);  // bricks.js
-  score = 0;
-  lives = 3;
-  selectedTarget = null;
-  aimCooldown = 0;
+  gameMode = mode;
+  if (mode === "campaign" && saved) {
+    wave = saved.wave;
+    score = saved.score;
+    lives = saved.lives;
+    speedSetting = saved.speedSetting || speedSetting;
+    ballSpeed = BALL_SPEED * speedSetting + Math.min(wave - 1, 10) * 0.4;
+    bricks = saved.bricks;
+    ball.x = saved.ball.x;
+    ball.y = saved.ball.y;
+    ball.vx = saved.ball.vx;
+    ball.vy = saved.ball.vy;
+    paddle.x = saved.paddle.x;
+    paddle.width = saved.paddle.width;
+    selectedTarget = bricks[saved.selectedTargetIndex] || null;
+    aimCooldown = saved.aimCooldown || 0;
+    paddleGrowTimer = saved.paddleGrowTimer || 0;
+    paddleSlowTimer = saved.paddleSlowTimer || 0;
+    ballSlowTimer = saved.ballSlowTimer || 0;
+    projectiles = saved.projectiles || [];
+    beamCooldown = saved.beamCooldown || 1200;
+    if (saved.brickBeam) {
+      const { sourceIndex, ...beamState } = saved.brickBeam;
+      brickBeam = { ...beamState, source: bricks[sourceIndex] || null };
+    } else {
+      brickBeam = null;
+    }
+  } else {
+    wave = 1;
+    ballSpeed = BALL_SPEED * speedSetting;
+    bricks = makeBricks(wave);  // bricks.js
+    score = 0;
+    lives = 3;
+    selectedTarget = null;
+    aimCooldown = 0;
+    paddle.width = PADDLE_BASE_WIDTH;
+    paddleGrowTimer = 0;
+    paddleSlowTimer = 0;
+    ballSlowTimer = 0;
+    brickBeam = null;
+    projectiles = [];
+    beamCooldown = 1800;
+    paddle.x = WIDTH / 2 - paddle.width / 2;
+    resetBall();
+  }
   particles = [];
-  paddle.width = PADDLE_BASE_WIDTH;
-  paddleGrowTimer = 0;
-  paddleSlowTimer = 0;
-  brickBeam = null;
-  projectiles = [];
-  beamCooldown = 1800;
-  paddle.x = WIDTH / 2 - paddle.width / 2;
-  resetBall();
   lastTime = performance.now();
-  showScreen("ready");
+  showScreen(saved && mode === "campaign" && saved.resumeState === "playing" ? "playing" : "ready");
+  if (mode === "campaign") {
+    saveCampaign();
+  }
 }
 
 let settingsReturnState = "menu";
-document.getElementById("play-button").addEventListener("click", startGame);
-document.getElementById("restart-button").addEventListener("click", startGame);
+document.getElementById("campaign-button").addEventListener("click", () => startGame("campaign"));
+document.getElementById("endless-button").addEventListener("click", () => startGame("endless"));
+document.getElementById("continue-button").addEventListener("click", () => {
+  const saved = loadCampaignSave();
+  if (saved) startGame("campaign", saved);
+});
+document.getElementById("restart-button").addEventListener("click", () => startGame(gameMode || "campaign"));
 document.getElementById("launch-button").addEventListener("click", launchBall);
 document.getElementById("resume-button").addEventListener("click", () => showScreen(pausedState));
 document.getElementById("pause-button").addEventListener("click", () => {
@@ -568,8 +684,13 @@ document.getElementById("pause-settings").addEventListener("click", () => {
   showScreen("settings");
 });
 document.getElementById("settings-back").addEventListener("click", () => showScreen(settingsReturnState));
-document.getElementById("menu-button").addEventListener("click", () => showScreen("menu"));
+document.getElementById("menu-button").addEventListener("click", () => {
+  saveCampaign();
+  showScreen("menu");
+});
 document.getElementById("gameover-menu").addEventListener("click", () => showScreen("menu"));
+document.getElementById("victory-endless").addEventListener("click", () => startGame("endless"));
+document.getElementById("victory-menu").addEventListener("click", () => showScreen("menu"));
 document.getElementById("effects-toggle").addEventListener("change", (event) => {
   particlesEnabled = event.target.checked;
   if (!particlesEnabled) particles = [];
@@ -582,6 +703,8 @@ document.getElementById("speed-select").addEventListener("change", (event) => {
   speedSetting = Number(event.target.value);
   ballSpeed = BALL_SPEED * speedSetting + Math.max(wave - 1, 0) * 0.4;
 });
+document.getElementById("continue-button").hidden = !loadCampaignSave();
+window.addEventListener("pagehide", saveCampaign);
 
 // Start only after bricks.js and collisions.js have finished loading.
 window.addEventListener("load", function () {

@@ -15,8 +15,10 @@
         <div class="menu-panel">
           <p class="eyebrow">ARCADE CLASSIC</p>
           <h2 id="menu-title">BLOCK BREAKER</h2>
-          <p class="screen-copy">Clear the field. Keep the ball alive.</p>
-          <button class="primary-button" id="play-button" type="button">Play</button>
+          <p class="screen-copy">Choose your run.</p>
+          <button class="primary-button" id="campaign-button" type="button">50-Level Campaign</button>
+          <button class="secondary-button" id="endless-button" type="button">Endless Mode</button>
+          <button class="text-button" id="continue-button" type="button" hidden>Continue Campaign</button>
           <button class="secondary-button" id="open-settings" type="button">Settings</button>
         </div>
       </section>
@@ -67,6 +69,15 @@
           <p class="screen-copy" id="final-score"></p>
           <button class="primary-button" id="restart-button" type="button">Play again</button>
           <button class="text-button" id="gameover-menu" type="button">Main menu</button>
+        </div>
+      </section>
+      <section class="screen" id="screen-victory" aria-labelledby="victory-title" hidden>
+        <div class="menu-panel">
+          <p class="eyebrow">CAMPAIGN COMPLETE</p>
+          <h2 id="victory-title">50 LEVELS CLEARED</h2>
+          <p class="screen-copy" id="victory-score"></p>
+          <button class="primary-button" id="victory-endless" type="button">Keep Playing Endless</button>
+          <button class="text-button" id="victory-menu" type="button">Main menu</button>
         </div>
       </section>
     </div>
