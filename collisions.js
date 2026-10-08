@@ -59,6 +59,64 @@ function bounceOffPaddle() {
   }
 }
 
+function applyBrickReward(brick) {
+  if (brick.type === "heart") {
+    grantHeart();
+  } else if (brick.type === "grow") {
+    activatePaddleGrow();
+  } else if (brick.type === "slow") {
+    applyBallSlow();
+  } else if (brick.type === "projectile") {
+    spawnBrickProjectiles(brick);
+  } else if (brick.type === "jackpot") {
+    score += 100;
+  }
+}
+
+function detonateBomb(source) {
+  const pendingBombs = [source];
+  const detonated = new Set();
+
+  while (pendingBombs.length > 0) {
+    const bomb = pendingBombs.pop();
+    if (detonated.has(bomb)) {
+      continue;
+    }
+    detonated.add(bomb);
+    playSound("bomb");
+
+    const centerX = bomb.x + bomb.width / 2;
+    const centerY = bomb.y + bomb.height / 2;
+    for (let index = 0; index < bricks.length; index++) {
+      const neighbor = bricks[index];
+      const dx = neighbor.x + neighbor.width / 2 - centerX;
+      const dy = neighbor.y + neighbor.height / 2 - centerY;
+      if (Math.hypot(dx, dy) > 66) {
+        continue;
+      }
+      if (neighbor.hits > 1) {
+        neighbor.hits--;
+        playSound("brick");
+        continue;
+      }
+
+      bricks.splice(index, 1);
+      index--;
+      if (neighbor === selectedTarget) {
+        selectedTarget = null;
+      }
+      spawnBrickParticles(neighbor);
+      score += 10;
+      if (neighbor.type === "bomb") {
+        pendingBombs.push(neighbor);
+      } else {
+        playSound(neighbor.type === "jackpot" ? "jackpot" : "brick");
+        applyBrickReward(neighbor);
+      }
+    }
+  }
+}
+
 
 // The ball bounces off and removes the brick it hits.
 function bounceOffBricks() {
@@ -94,21 +152,21 @@ function bounceOffBricks() {
       brick.hits--;
       playSound("brick");
     } else {
-      playSound(brick.type === "giant" ? "giant" : brick.type === "heart" || brick.type === "grow" || brick.type === "slow" ? brick.type : "brick");
+      const sound = brick.type === "bomb" || brick.type === "jackpot"
+        ? brick.type
+        : brick.type === "giant" || brick.type === "heart" || brick.type === "grow" || brick.type === "slow"
+          ? brick.type
+          : "brick";
+      playSound(sound);
       spawnBrickParticles(brick);
-      if (brick.type === "heart") {
-        grantHeart();
-      } else if (brick.type === "grow") {
-        activatePaddleGrow();
-      } else if (brick.type === "slow") {
-        applyBallSlow();
-      } else if (brick.type === "projectile") {
-        spawnBrickProjectiles(brick);
-      }
       if (brick === selectedTarget) {
         selectedTarget = null;
       }
       bricks.splice(index, 1);
+      applyBrickReward(brick);
+      if (brick.type === "bomb") {
+        detonateBomb(brick);
+      }
     }
     score += 10;
     break;  // bounce off one brick per update, then stop looking

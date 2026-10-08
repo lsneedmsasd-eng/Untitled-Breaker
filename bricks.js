@@ -46,8 +46,12 @@ function makeBricks(currentWave) {
         ? "heart"
         : index % 32 === 11
           ? "grow"
+          : index % 32 === 14
+            ? "jackpot"
           : index % 32 === 21
             ? "slow"
+            : index % 32 === 26
+              ? "bomb"
             : currentWave >= 2 && col === shooterColumn
               ? "shooter"
               : currentWave >= 2 && index % 13 === 2
@@ -77,6 +81,10 @@ function drawBricks() {
       ? "#f05b78"
       : brick.type === "grow"
         ? "#55cbb2"
+        : brick.type === "jackpot"
+          ? "#f3d45b"
+          : brick.type === "bomb"
+            ? "#fa6658"
         : brick.type === "slow"
           ? "#789be8"
           : brick.type === "giant"
@@ -102,13 +110,13 @@ function drawBricks() {
       ctx.beginPath();
       ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, 3, 0, Math.PI * 2);
       ctx.fill();
-    } else if (brick.type === "heart" || brick.type === "grow" || brick.type === "slow" || brick.type === "giant") {
+    } else if (["heart", "grow", "slow", "giant", "jackpot", "bomb"].includes(brick.type)) {
       ctx.save();
       ctx.fillStyle = "#ffffff";
       ctx.font = brick.type === "slow" ? "8px sans-serif" : "12px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      const symbol = brick.type === "heart" ? "♥" : brick.type === "grow" ? "↔" : brick.type === "slow" ? "SLOW" : "4";
+      const symbol = brick.type === "heart" ? "♥" : brick.type === "grow" ? "↔" : brick.type === "slow" ? "SLOW" : brick.type === "giant" ? "4" : brick.type === "jackpot" ? "+100" : "✹";
       ctx.fillText(symbol, brick.x + brick.width / 2, brick.y + brick.height / 2);
       ctx.restore();
     } else if (brick.hits > 1) {
@@ -204,6 +212,7 @@ function updateBrickProjectiles(deltaTime) {
       projectile.y - projectile.radius < paddle.y + paddle.height;
     if (touchesPaddle && !projectile.touchingPaddle) {
       projectile.slowTimer = 1600;
+      slowPaddle();
     }
     projectile.touchingPaddle = touchesPaddle;
   }

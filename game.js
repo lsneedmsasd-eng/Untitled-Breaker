@@ -23,9 +23,12 @@ const BALL_SPEED = 4;
 let speedSetting = 1;
 let ballSpeed = BALL_SPEED * speedSetting;
 const PADDLE_BASE_WIDTH = 90;
+const PADDLE_SLOW_FACTOR = 0.5;
+const PADDLE_SLOW_DURATION = 1600;
 const MAX_LIVES = 5;
 const PADDLE_GROW_DURATION = 8000;
 let paddleGrowTimer = 0;
+let paddleSlowTimer = 0;
 const BALL_SLOW_FACTOR = 0.65;
 const BALL_SLOW_DURATION = 6000;
 let ballSlowTimer = 0;
@@ -39,6 +42,8 @@ const SOUND_PRESETS = {
   heart: { frequency: 790, duration: 0.16, waveform: "sine" },
   grow: { frequency: 430, duration: 0.14, waveform: "triangle" },
   slow: { frequency: 240, duration: 0.2, waveform: "sawtooth" },
+  jackpot: { frequency: 920, duration: 0.22, waveform: "sine" },
+  bomb: { frequency: 95, duration: 0.28, waveform: "sawtooth" },
   launch: { frequency: 360, duration: 0.12, waveform: "triangle" },
   lifeLost: { frequency: 170, duration: 0.24, waveform: "sawtooth" }
 };
@@ -240,6 +245,7 @@ function update() {
   }
 
   aimCooldown = Math.max(0, aimCooldown - STEP);
+  updatePaddleSlow(STEP);
   movePaddle();
   updatePaddleGrow(STEP);
   updateBallSlow(STEP);
@@ -297,6 +303,14 @@ function updatePaddleGrow(deltaTime) {
   }
 }
 
+function slowPaddle() {
+  paddleSlowTimer = Math.max(paddleSlowTimer, PADDLE_SLOW_DURATION);
+}
+
+function updatePaddleSlow(deltaTime) {
+  paddleSlowTimer = Math.max(0, paddleSlowTimer - deltaTime);
+}
+
 function applyBallSlow() {
   if (ballSlowTimer <= 0) {
     ball.vx *= BALL_SLOW_FACTOR;
@@ -337,6 +351,10 @@ function spawnBrickParticles(brick) {
     ? "#f05b70"
     : brick.type === "projectile"
       ? "#65d5e8"
+      : brick.type === "jackpot"
+        ? "#f3d45b"
+        : brick.type === "bomb"
+          ? "#fa6658"
       : brick.type === "heart"
         ? "#f05b78"
         : brick.type === "grow"
@@ -374,11 +392,12 @@ function drawParticles() {
 }
 
 function movePaddle() {
+  const movementSpeed = paddle.speed * (paddleSlowTimer > 0 ? PADDLE_SLOW_FACTOR : 1);
   if (keys["arrowleft"] || keys["a"]) {
-    paddle.x = paddle.x - paddle.speed;
+    paddle.x = paddle.x - movementSpeed;
   }
   if (keys["arrowright"] || keys["d"]) {
-    paddle.x = paddle.x + paddle.speed;
+    paddle.x = paddle.x + movementSpeed;
   }
 
   // Keep the paddle on the screen.
@@ -519,6 +538,7 @@ function startGame() {
   particles = [];
   paddle.width = PADDLE_BASE_WIDTH;
   paddleGrowTimer = 0;
+  paddleSlowTimer = 0;
   brickBeam = null;
   projectiles = [];
   beamCooldown = 1800;
