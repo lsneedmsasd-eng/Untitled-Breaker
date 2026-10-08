@@ -128,7 +128,10 @@ function drawBricks() {
 }
 
 let brickBeam = null;
-let beamCooldown = 1800;
+const LASER_WIDTH = 34;
+const LASER_CHARGE_DURATION = 360;
+const LASER_FIRE_DURATION = 280;
+let beamCooldown = 1200;
 let projectiles = [];
 
 function spawnBrickProjectiles(brick) {
@@ -156,7 +159,7 @@ function updateBrickWeapons(deltaTime) {
       }
       if (brickBeam.timer <= 0) {
         brickBeam.state = "firing";
-        brickBeam.timer = 420;
+        brickBeam.timer = LASER_FIRE_DURATION;
       }
     } else {
       if (!brickBeam.hitPaddle && boxesTouch(paddle, brickBeam)) {
@@ -165,7 +168,7 @@ function updateBrickWeapons(deltaTime) {
       }
       if (brickBeam.timer <= 0) {
         brickBeam = null;
-        beamCooldown = Math.max(1100, 3200 - (wave - 1) * 100);
+        beamCooldown = Math.max(750, 2200 - (wave - 1) * 100);
       }
     }
     return;
@@ -182,7 +185,7 @@ function updateBrickWeapons(deltaTime) {
   }
   const source = shooters[Math.floor(Math.random() * shooters.length)];
 
-  const width = 92;
+  const width = LASER_WIDTH;
   const x = Math.max(0, Math.min(WIDTH - width, source.x + source.width / 2 - width / 2));
   brickBeam = {
     x,
@@ -191,7 +194,7 @@ function updateBrickWeapons(deltaTime) {
     height: HEIGHT - source.y - source.height,
     source,
     state: "charging",
-    timer: 720,
+    timer: LASER_CHARGE_DURATION,
     hitPaddle: false
   };
 }
@@ -236,18 +239,26 @@ function drawBrickWeapons() {
 
   ctx.save();
   if (brickBeam.state === "charging") {
-    ctx.fillStyle = "rgba(255, 184, 94, 0.10)";
+    const chargeProgress = 1 - brickBeam.timer / LASER_CHARGE_DURATION;
+    const pulse = 0.08 + (0.12 + chargeProgress * 0.22) * (0.5 + 0.5 * Math.sin(brickBeam.timer * 0.035));
+    ctx.fillStyle = `rgba(255, 184, 94, ${pulse})`;
     ctx.fillRect(brickBeam.x, brickBeam.y, brickBeam.width, brickBeam.height);
-    ctx.strokeStyle = "rgba(255, 202, 122, 0.8)";
+    ctx.strokeStyle = `rgba(255, 202, 122, ${0.5 + chargeProgress * 0.5})`;
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 7]);
+    ctx.lineDashOffset = brickBeam.timer * 0.025;
     ctx.strokeRect(brickBeam.x + 1, brickBeam.y, brickBeam.width - 2, brickBeam.height);
     ctx.setLineDash([]);
   } else {
-    ctx.fillStyle = "rgba(255, 75, 91, 0.34)";
+    const fireProgress = 1 - brickBeam.timer / LASER_FIRE_DURATION;
+    const pulse = 0.28 + 0.18 * (0.5 + 0.5 * Math.sin(brickBeam.timer * 0.08));
+    ctx.fillStyle = `rgba(255, 75, 91, ${pulse})`;
     ctx.fillRect(brickBeam.x, brickBeam.y, brickBeam.width, brickBeam.height);
-    ctx.fillStyle = "rgba(255, 184, 145, 0.8)";
-    ctx.fillRect(brickBeam.x + brickBeam.width / 2 - 3, brickBeam.y, 6, brickBeam.height);
+    ctx.fillStyle = "rgba(255, 184, 145, 0.88)";
+    ctx.fillRect(brickBeam.x + brickBeam.width / 2 - 2, brickBeam.y, 4, brickBeam.height);
+    const flareY = brickBeam.y + (brickBeam.height - 22) * fireProgress;
+    ctx.fillStyle = "rgba(255, 245, 220, 0.95)";
+    ctx.fillRect(brickBeam.x - 3, flareY, brickBeam.width + 6, 22);
   }
   ctx.restore();
 }
