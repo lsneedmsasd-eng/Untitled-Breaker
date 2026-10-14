@@ -93,6 +93,23 @@ canvas {
   line-height: 1.5;
 }
 
+.leaderboard-title {
+  margin: 18px 0 6px;
+  color: #fff4c2;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.leaderboard-list {
+  margin: 0;
+  padding: 0;
+  color: #a9bbc2;
+  font-size: 12px;
+  line-height: 1.6;
+  list-style: none;
+  text-align: left;
+}
+
 .menu-panel button {
   width: 100%;
   min-height: 42px;

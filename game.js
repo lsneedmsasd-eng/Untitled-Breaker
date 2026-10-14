@@ -22,6 +22,8 @@ const HEIGHT = canvas.height; // 450
 const BALL_SPEED = 4;
 const CAMPAIGN_LEVELS = 50;
 const CAMPAIGN_SAVE_KEY = "block-breaker-campaign-v1";
+const ENDLESS_LEADERBOARD_KEY = "block-breaker-endless-leaderboard-v1";
+const ENDLESS_LEADERBOARD_SIZE = 5;
 let gameMode = null;
 let lastCampaignSave = 0;
 let speedSetting = 1;
@@ -148,6 +150,8 @@ const paddle = {
 };
 const AIM_RANGE = 180;
 const AIM_COOLDOWN = 15000;
+const PASSIVE_AIM_STRENGTH = 0.003;
+const PASSIVE_AIM_RANGE = 120;
 
 
 // ------------------------------------------------------------
@@ -253,6 +257,7 @@ function update() {
   movePaddle();
   updatePaddleGrow(STEP);
   updateBallSlow(STEP);
+  applyPassiveAim();
   moveBall();
 
   bounceOffWalls();   // collisions.js
@@ -278,6 +283,8 @@ function loseLife() {
   if (lives <= 0) {
     if (gameMode === "campaign") {
       clearCampaignSave();
+    } else if (gameMode === "endless") {
+      recordEndlessScore();
     }
     document.getElementById("final-score").textContent = `Final score: ${score}`;
     showScreen("gameover");
@@ -421,6 +428,42 @@ function moveBall() {
   ball.y = ball.y + ball.vy;
 }
 
+function applyPassiveAim() {
+  if (ball.vy >= 0 || (selectedTarget && bricks.includes(selectedTarget))) {
+    return;
+  }
+
+  const ballCenterX = ball.x + ball.width / 2;
+  const ballCenterY = ball.y + ball.height / 2;
+  let nearestTarget = null;
+  let nearestDistance = Infinity;
+  for (const brick of bricks) {
+    const targetX = brick.x + brick.width / 2;
+    const targetY = brick.y + brick.height / 2;
+    if (targetY >= ballCenterY || Math.abs(targetX - ballCenterX) > PASSIVE_AIM_RANGE) {
+      continue;
+    }
+    const distance = Math.hypot(targetX - ballCenterX, targetY - ballCenterY);
+    if (distance < nearestDistance) {
+      nearestTarget = brick;
+      nearestDistance = distance;
+    }
+  }
+  if (!nearestTarget) {
+    return;
+  }
+
+  const deltaX = nearestTarget.x + nearestTarget.width / 2 - ballCenterX;
+  const deltaY = nearestTarget.y + nearestTarget.height / 2 - ballCenterY;
+  const speed = Math.hypot(ball.vx, ball.vy);
+  const distance = Math.hypot(deltaX, deltaY);
+  const adjustedVX = ball.vx + (deltaX / distance * speed - ball.vx) * PASSIVE_AIM_STRENGTH;
+  const adjustedVY = ball.vy + (deltaY / distance * speed - ball.vy) * PASSIVE_AIM_STRENGTH;
+  const adjustedSpeed = Math.hypot(adjustedVX, adjustedVY);
+  ball.vx = adjustedVX / adjustedSpeed * speed;
+  ball.vy = adjustedVY / adjustedSpeed * speed;
+}
+
 
 // ------------------------------------------------------------
 // DRAW: paints everything on the canvas. Black background,
@@ -544,6 +587,60 @@ function showScreen(state) {
   for (const name of ["menu", "ready", "settings", "pause", "gameover", "victory"]) {
     document.getElementById(`screen-${name}`).hidden = name !== screen;
   }
+}
+
+function loadEndlessLeaderboard() {
+  try {
+    const saved = localStorage.getItem(ENDLESS_LEADERBOARD_KEY);
+    if (!saved) {
+      return [];
+    }
+    const entries = JSON.parse(saved);
+    if (!Array.isArray(entries) || entries.some((entry) =>
+      !Number.isSafeInteger(entry.score) || entry.score < 0 ||
+      !Number.isSafeInteger(entry.wave) || entry.wave < 1
+    )) {
+      throw new Error("Saved endless leaderboard has an invalid format.");
+    }
+    return entries
+      .sort((a, b) => b.score - a.score || b.wave - a.wave)
+      .slice(0, ENDLESS_LEADERBOARD_SIZE);
+  } catch (error) {
+    console.error("Unable to load the endless leaderboard.", error);
+    return [];
+  }
+}
+
+function renderEndlessLeaderboard() {
+  const entries = loadEndlessLeaderboard();
+  for (const listId of ["menu-leaderboard", "gameover-leaderboard"]) {
+    const list = document.getElementById(listId);
+    list.replaceChildren();
+    if (entries.length === 0) {
+      const emptyMessage = document.createElement("li");
+      emptyMessage.textContent = "No endless runs yet.";
+      list.append(emptyMessage);
+      continue;
+    }
+    entries.forEach((entry, index) => {
+      const row = document.createElement("li");
+      row.textContent = `${index + 1}. ${entry.score} pts - Wave ${entry.wave}`;
+      list.append(row);
+    });
+  }
+}
+
+function recordEndlessScore() {
+  const entries = loadEndlessLeaderboard();
+  entries.push({ score, wave });
+  entries.sort((a, b) => b.score - a.score || b.wave - a.wave);
+  const topEntries = entries.slice(0, ENDLESS_LEADERBOARD_SIZE);
+  try {
+    localStorage.setItem(ENDLESS_LEADERBOARD_KEY, JSON.stringify(topEntries));
+  } catch (error) {
+    console.error("Unable to save the endless leaderboard.", error);
+  }
+  renderEndlessLeaderboard();
 }
 
 function loadCampaignSave() {
@@ -704,6 +801,7 @@ document.getElementById("speed-select").addEventListener("change", (event) => {
   ballSpeed = BALL_SPEED * speedSetting + Math.max(wave - 1, 0) * 0.4;
 });
 document.getElementById("continue-button").hidden = !loadCampaignSave();
+renderEndlessLeaderboard();
 window.addEventListener("pagehide", saveCampaign);
 
 // Start only after bricks.js and collisions.js have finished loading.

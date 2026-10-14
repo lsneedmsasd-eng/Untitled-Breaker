@@ -9,9 +9,11 @@ const BRICK_GAP = 5;
 const BRICK_ROW_GAP = 4;
 const BRICKS_TOP = 50;
 const MAX_BRICKS = 250;
+const MAX_LASER_BLOCKS = 2;
 
 function makeBricks(currentWave) {
   const list = [];
+  let shooterCount = 0;
   const totalWidth = BRICK_COLUMNS * BRICK_WIDTH + (BRICK_COLUMNS - 1) * BRICK_GAP;
   const left = (WIDTH - totalWidth) / 2;
   const desiredCount = Math.min(MAX_BRICKS, 32 + (currentWave - 1) * 14);
@@ -52,7 +54,7 @@ function makeBricks(currentWave) {
             ? "slow"
             : index % 32 === 26
               ? "bomb"
-            : currentWave >= 2 && col === shooterColumn
+            : currentWave >= 2 && shooterCount < MAX_LASER_BLOCKS && col === shooterColumn
               ? "shooter"
               : currentWave >= 2 && index % 13 === 2
                 ? "projectile"
@@ -60,6 +62,9 @@ function makeBricks(currentWave) {
                   ? "armored"
                   : "normal";
 
+    if (type === "shooter") {
+      shooterCount++;
+    }
     list.push({
       x: left + col * (BRICK_WIDTH + BRICK_GAP),
       y: BRICKS_TOP + row * (BRICK_HEIGHT + BRICK_ROW_GAP),
@@ -129,7 +134,7 @@ function drawBricks() {
 
 let brickBeam = null;
 const LASER_WIDTH = 34;
-const LASER_CHARGE_DURATION = 360;
+const LASER_CHARGE_DURATION = 1360;
 const LASER_FIRE_DURATION = 280;
 let beamCooldown = 1200;
 let projectiles = [];

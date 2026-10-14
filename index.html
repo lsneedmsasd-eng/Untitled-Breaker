@@ -20,6 +20,8 @@
           <button class="secondary-button" id="endless-button" type="button">Endless Mode</button>
           <button class="text-button" id="continue-button" type="button" hidden>Continue Campaign</button>
           <button class="secondary-button" id="open-settings" type="button">Settings</button>
+          <h3 class="leaderboard-title">ENDLESS LEADERBOARD</h3>
+          <ol class="leaderboard-list" id="menu-leaderboard"></ol>
         </div>
       </section>
       <section class="screen" id="screen-ready" aria-labelledby="ready-title" hidden>
@@ -67,6 +69,8 @@
           <p class="eyebrow">RUN COMPLETE</p>
           <h2 id="gameover-title">GAME OVER</h2>
           <p class="screen-copy" id="final-score"></p>
+          <h3 class="leaderboard-title">ENDLESS LEADERBOARD</h3>
+          <ol class="leaderboard-list" id="gameover-leaderboard"></ol>
           <button class="primary-button" id="restart-button" type="button">Play again</button>
           <button class="text-button" id="gameover-menu" type="button">Main menu</button>
         </div>
@@ -82,7 +86,7 @@
       </section>
     </div>
     <div class="game-footer">
-      <p>Move with ← → or A / D. Click a nearby brick to aim your next shot.</p>
+      <p>Move with ← → or A / D. Passive aim gently guides shots; click a nearby brick for stronger aim.</p>
       <button id="pause-button" type="button" aria-label="Pause game" title="Pause game">Ⅱ</button>
     </div>
   </main>
