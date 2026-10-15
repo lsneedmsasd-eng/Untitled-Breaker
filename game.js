@@ -148,7 +148,7 @@ const paddle = {
 };
 const AIM_RANGE = 180;
 const AIM_COOLDOWN = 15000;
-const PASSIVE_AIM_STRENGTH = 0.003;
+const PASSIVE_AIM_STRENGTH = 0.004;
 const PASSIVE_AIM_RANGE = 120;
 
 
