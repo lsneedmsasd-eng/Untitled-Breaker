@@ -69,7 +69,7 @@ function applyBrickReward(brick) {
   } else if (brick.type === "projectile") {
     spawnBrickProjectiles(brick);
   } else if (brick.type === "jackpot") {
-    score += 100;
+    addScore(100);
   }
 }
 
@@ -106,7 +106,7 @@ function detonateBomb(source) {
         selectedTarget = null;
       }
       spawnBrickParticles(neighbor);
-      score += 10;
+      addBrickScore();
       if (neighbor.type === "bomb") {
         pendingBombs.push(neighbor);
       } else {
@@ -151,6 +151,7 @@ function bounceOffBricks() {
     if (brick.hits > 1) {
       brick.hits--;
       playSound("brick");
+        addScore(10);
     } else {
       const sound = brick.type === "bomb" || brick.type === "jackpot"
         ? brick.type
@@ -167,8 +168,8 @@ function bounceOffBricks() {
       if (brick.type === "bomb") {
         detonateBomb(brick);
       }
+      addBrickScore();
     }
-    score += 10;
     break;  // bounce off one brick per update, then stop looking
   }
 }

@@ -22,8 +22,6 @@ const HEIGHT = canvas.height; // 450
 const BALL_SPEED = 4;
 const CAMPAIGN_LEVELS = 50;
 const CAMPAIGN_SAVE_KEY = "block-breaker-campaign-v1";
-const ENDLESS_LEADERBOARD_KEY = "block-breaker-endless-leaderboard-v1";
-const ENDLESS_LEADERBOARD_SIZE = 5;
 let gameMode = null;
 let lastCampaignSave = 0;
 let speedSetting = 1;
@@ -168,6 +166,16 @@ let particlesEnabled = true;
 let particles = [];
 let pausedState = "playing";
 
+function addScore(points) {
+  score += points;
+  gamestate.updateHighScore(score);
+  document.getElementById("menu-high-score").textContent = `PERSONAL HIGH SCORE: ${gamestate.highScore}`;
+}
+
+function addBrickScore() {
+  addScore(gamestate.recordBlockBreak());
+}
+
 
 // ------------------------------------------------------------
 // KEYBOARD
@@ -278,6 +286,7 @@ function update() {
 
 function loseLife() {
   lives--;
+  gamestate.resetCombo();
   playSound("lifeLost");
   selectedTarget = null;
   if (lives <= 0) {
@@ -478,7 +487,8 @@ function draw() {
 
   ctx.fillStyle = "#b7c8d4";
   ctx.font = "bold 12px Trebuchet MS, sans-serif";
-  ctx.fillText(`SCORE  ${score}`, 18, 25);
+  const comboLabel = gamestate.combo > 1 ? `   COMBO x${gamestate.combo}` : "";
+  ctx.fillText(`SCORE  ${score}${comboLabel}`, 18, 25);
   ctx.textAlign = "center";
   const modeLabel = gameMode === "endless" ? `ENDLESS ${wave}` : `LEVEL ${wave}/${CAMPAIGN_LEVELS}`;
   ctx.fillText(modeLabel, WIDTH / 2, 25);
@@ -589,30 +599,9 @@ function showScreen(state) {
   }
 }
 
-function loadEndlessLeaderboard() {
-  try {
-    const saved = localStorage.getItem(ENDLESS_LEADERBOARD_KEY);
-    if (!saved) {
-      return [];
-    }
-    const entries = JSON.parse(saved);
-    if (!Array.isArray(entries) || entries.some((entry) =>
-      !Number.isSafeInteger(entry.score) || entry.score < 0 ||
-      !Number.isSafeInteger(entry.wave) || entry.wave < 1
-    )) {
-      throw new Error("Saved endless leaderboard has an invalid format.");
-    }
-    return entries
-      .sort((a, b) => b.score - a.score || b.wave - a.wave)
-      .slice(0, ENDLESS_LEADERBOARD_SIZE);
-  } catch (error) {
-    console.error("Unable to load the endless leaderboard.", error);
-    return [];
-  }
-}
-
 function renderEndlessLeaderboard() {
-  const entries = loadEndlessLeaderboard();
+  const entries = gamestate.leaderboard;
+  document.getElementById("menu-high-score").textContent = `PERSONAL HIGH SCORE: ${gamestate.highScore}`;
   for (const listId of ["menu-leaderboard", "gameover-leaderboard"]) {
     const list = document.getElementById(listId);
     list.replaceChildren();
@@ -624,22 +613,14 @@ function renderEndlessLeaderboard() {
     }
     entries.forEach((entry, index) => {
       const row = document.createElement("li");
-      row.textContent = `${index + 1}. ${entry.score} pts - Wave ${entry.wave}`;
+      row.textContent = `${index + 1}. ${entry.username} - ${entry.score} pts - Wave ${entry.wave}`;
       list.append(row);
     });
   }
 }
 
 function recordEndlessScore() {
-  const entries = loadEndlessLeaderboard();
-  entries.push({ score, wave });
-  entries.sort((a, b) => b.score - a.score || b.wave - a.wave);
-  const topEntries = entries.slice(0, ENDLESS_LEADERBOARD_SIZE);
-  try {
-    localStorage.setItem(ENDLESS_LEADERBOARD_KEY, JSON.stringify(topEntries));
-  } catch (error) {
-    console.error("Unable to save the endless leaderboard.", error);
-  }
+  gamestate.recordEndlessRun(score, wave);
   renderEndlessLeaderboard();
 }
 
@@ -668,6 +649,7 @@ function saveCampaign() {
     version: 1,
     wave,
     score,
+    combo: gamestate.combo,
     lives,
     speedSetting,
     bricks,
@@ -707,6 +689,7 @@ function startGame(mode = "campaign", saved = null) {
   if (mode === "campaign" && saved) {
     wave = saved.wave;
     score = saved.score;
+    gamestate.restoreCombo(saved.combo);
     lives = saved.lives;
     speedSetting = saved.speedSetting || speedSetting;
     ballSpeed = BALL_SPEED * speedSetting + Math.min(wave - 1, 10) * 0.4;
@@ -735,6 +718,7 @@ function startGame(mode = "campaign", saved = null) {
     ballSpeed = BALL_SPEED * speedSetting;
     bricks = makeBricks(wave);  // bricks.js
     score = 0;
+    gamestate.resetCombo();
     lives = 3;
     selectedTarget = null;
     aimCooldown = 0;
@@ -799,6 +783,15 @@ document.getElementById("sound-toggle").addEventListener("change", (event) => {
 document.getElementById("speed-select").addEventListener("change", (event) => {
   speedSetting = Number(event.target.value);
   ballSpeed = BALL_SPEED * speedSetting + Math.max(wave - 1, 0) * 0.4;
+});
+document.getElementById("username-input").value = gamestate.username;
+document.getElementById("account-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const result = gamestate.setUsername(document.getElementById("username-input").value);
+  const message = document.getElementById("account-message");
+  message.textContent = result.valid ? `Saved as ${result.value}.` : result.message;
+  message.dataset.error = String(!result.valid);
+  if (result.valid) renderEndlessLeaderboard();
 });
 document.getElementById("continue-button").hidden = !loadCampaignSave();
 renderEndlessLeaderboard();

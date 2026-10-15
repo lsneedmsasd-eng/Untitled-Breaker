@@ -20,6 +20,7 @@
           <button class="secondary-button" id="endless-button" type="button">Endless Mode</button>
           <button class="text-button" id="continue-button" type="button" hidden>Continue Campaign</button>
           <button class="secondary-button" id="open-settings" type="button">Settings</button>
+          <p class="high-score" id="menu-high-score"></p>
           <h3 class="leaderboard-title">ENDLESS LEADERBOARD</h3>
           <ol class="leaderboard-list" id="menu-leaderboard"></ol>
         </div>
@@ -52,6 +53,12 @@
               <option value="1.25">Fast</option>
             </select>
           </label>
+          <form class="account-form" id="account-form">
+            <label for="username-input">Player username</label>
+            <input id="username-input" name="username" type="text" minlength="3" maxlength="16" autocomplete="nickname" required>
+            <p id="account-message" aria-live="polite">Local profile. Scores are saved on this device.</p>
+            <button class="secondary-button" type="submit">Save username</button>
+          </form>
           <button class="primary-button" id="settings-back" type="button">Done</button>
         </div>
       </section>
@@ -91,7 +98,9 @@
     </div>
   </main>
 
-  <!-- The order matters: game.js goes first because the other files use its settings. -->
+  <!-- State and username validation are shared by the game and collision scripts. -->
+  <script src="username-filter.js"></script>
+  <script src="gamestate.js"></script>
   <script src="game.js"></script>
   <script src="bricks.js"></script>
   <script src="collisions.js"></script>

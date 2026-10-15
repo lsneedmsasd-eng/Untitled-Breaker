@@ -93,6 +93,13 @@ canvas {
   line-height: 1.5;
 }
 
+.high-score {
+  margin: 10px 0 0;
+  color: #a5f3e7;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .leaderboard-title {
   margin: 18px 0 6px;
   color: #fff4c2;
@@ -152,6 +159,41 @@ canvas {
 .setting-row input,
 .setting-row select {
   accent-color: #52c9b9;
+}
+
+.account-form {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.account-form label {
+  display: block;
+  margin-bottom: 7px;
+  color: #d7e4e4;
+  font-size: 13px;
+}
+
+.account-form input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #48636c;
+  border-radius: 3px;
+  background: #142630;
+  color: #e7f0f1;
+  font: inherit;
+}
+
+.account-form p {
+  min-height: 30px;
+  margin: 7px 0 0;
+  color: #9fb3bf;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.account-form p[data-error="true"] {
+  color: #ff9b8b;
 }
 
 .setting-row select {
