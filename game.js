@@ -161,6 +161,7 @@ let wave = 1;
 let lives = 3;
 let gameState = "menu";
 let selectedTarget = null;
+let passiveAimTarget = null;
 let aimCooldown = 0;
 let particlesEnabled = true;
 let particles = [];
@@ -438,6 +439,7 @@ function moveBall() {
 }
 
 function applyPassiveAim() {
+  passiveAimTarget = null;
   if (ball.vy >= 0 || (selectedTarget && bricks.includes(selectedTarget))) {
     return;
   }
@@ -461,6 +463,7 @@ function applyPassiveAim() {
   if (!nearestTarget) {
     return;
   }
+  passiveAimTarget = nearestTarget;
 
   const deltaX = nearestTarget.x + nearestTarget.width / 2 - ballCenterX;
   const deltaY = nearestTarget.y + nearestTarget.height / 2 - ballCenterY;
@@ -514,6 +517,15 @@ function draw() {
   drawBricks();  // bricks.js
   drawBrickWeapons();  // bricks.js
   drawParticles();
+
+  if (passiveAimTarget && bricks.includes(passiveAimTarget)) {
+    ctx.save();
+    ctx.strokeStyle = "#65d5e8";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(passiveAimTarget.x - 3, passiveAimTarget.y - 3, passiveAimTarget.width + 6, passiveAimTarget.height + 6);
+    ctx.restore();
+  }
 
   if (selectedTarget && bricks.includes(selectedTarget)) {
     ctx.strokeStyle = "#fff4c2";
