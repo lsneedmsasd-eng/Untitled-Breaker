@@ -2,10 +2,10 @@
 // bricks.js: where the bricks are, and how they are drawn
 // ============================================================
 
-const BRICK_COLUMNS = 13;
-const BRICK_WIDTH = 39;
-const BRICK_HEIGHT = 14;
-const BRICK_GAP = 5;
+const BRICK_COLUMNS = 16;
+const BRICK_WIDTH = 48;
+const BRICK_HEIGHT = 18;
+const BRICK_GAP = 6;
 const BRICK_ROW_GAP = 4;
 const BRICKS_TOP = 50;
 const MAX_BRICKS = 250;
@@ -54,6 +54,8 @@ function makeBricks(currentWave) {
             ? "slow"
             : index % 32 === 26
               ? "bomb"
+            : index % 32 === 29
+              ? "poison"
             : currentWave >= 2 && shooterCount < MAX_LASER_BLOCKS && col === shooterColumn
               ? "shooter"
               : currentWave >= 2 && index % 13 === 2
@@ -90,6 +92,8 @@ function drawBricks() {
           ? "#f3d45b"
           : brick.type === "bomb"
             ? "#fa6658"
+            : brick.type === "poison"
+              ? "#b6f45b"
         : brick.type === "slow"
           ? "#789be8"
           : brick.type === "giant"
@@ -115,13 +119,13 @@ function drawBricks() {
       ctx.beginPath();
       ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, 3, 0, Math.PI * 2);
       ctx.fill();
-    } else if (["heart", "grow", "slow", "giant", "jackpot", "bomb"].includes(brick.type)) {
+    } else if (["heart", "grow", "slow", "giant", "jackpot", "bomb", "poison"].includes(brick.type)) {
       ctx.save();
       ctx.fillStyle = "#ffffff";
       ctx.font = brick.type === "slow" ? "8px sans-serif" : "12px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      const symbol = brick.type === "heart" ? "♥" : brick.type === "grow" ? "↔" : brick.type === "slow" ? "SLOW" : brick.type === "giant" ? "4" : brick.type === "jackpot" ? "+100" : "✹";
+      const symbol = brick.type === "heart" ? "♥" : brick.type === "grow" ? "↔" : brick.type === "slow" ? "SLOW" : brick.type === "giant" ? "4" : brick.type === "jackpot" ? "+100" : brick.type === "poison" ? "✦" : "✹";
       ctx.fillText(symbol, brick.x + brick.width / 2, brick.y + brick.height / 2);
       ctx.restore();
     } else if (brick.hits > 1) {

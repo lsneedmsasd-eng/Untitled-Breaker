@@ -70,6 +70,8 @@ function applyBrickReward(brick) {
     spawnBrickProjectiles(brick);
   } else if (brick.type === "jackpot") {
     addScore(100);
+  } else if (brick.type === "poison") {
+    applyBallShrink();
   }
 }
 

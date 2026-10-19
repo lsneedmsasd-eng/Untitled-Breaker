@@ -10,7 +10,8 @@
   <main>
     <h1>BLOCK BREAKER</h1>
     <div class="game-shell">
-      <canvas id="game" width="600" height="450" aria-label="Block Breaker game"></canvas>
+      <canvas id="game" width="960" height="640" aria-label="Block Breaker game"></canvas>
+      <div class="game-popup" id="game-popup" role="status" aria-live="polite" hidden></div>
       <section class="screen" id="screen-menu" aria-labelledby="menu-title">
         <div class="menu-panel">
           <p class="eyebrow">ARCADE CLASSIC</p>
@@ -93,7 +94,7 @@
       </section>
     </div>
     <div class="game-footer">
-      <p>Move with ← → or A / D. Passive aim gently guides shots; click a nearby brick for stronger aim.</p>
+      <p>Move with ← → or A / D. Auto-aim follows your paddle; click a nearby brick to lock on.</p>
       <button id="pause-button" type="button" aria-label="Pause game" title="Pause game">Ⅱ</button>
     </div>
   </main>
