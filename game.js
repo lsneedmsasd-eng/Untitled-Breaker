@@ -155,6 +155,7 @@ const paddle = {
 };
 const AIM_RANGE = 260;
 const AIM_COOLDOWN = 15000;
+const AIM_SWITCH_COOLDOWN = 5000;
 const PASSIVE_AIM_STRENGTH = 0.004;
 const PASSIVE_AIM_RANGE = 220;
 
@@ -246,8 +247,9 @@ canvas.addEventListener("click", function (event) {
 
   const paddleCenter = paddle.x + paddle.width / 2;
   if (target && Math.abs(target.x + target.width / 2 - paddleCenter) <= AIM_RANGE) {
+    const isSwitchingTarget = selectedTarget && selectedTarget !== target;
     selectedTarget = target;
-    aimCooldown = AIM_COOLDOWN;
+    aimCooldown = isSwitchingTarget ? AIM_SWITCH_COOLDOWN : AIM_COOLDOWN;
   } else {
     selectedTarget = null;
   }
