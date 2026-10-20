@@ -20,10 +20,32 @@
           <button class="primary-button" id="campaign-button" type="button">50-Level Campaign</button>
           <button class="secondary-button" id="endless-button" type="button">Endless Mode</button>
           <button class="text-button" id="continue-button" type="button" hidden>Continue Campaign</button>
+          <button class="secondary-button" id="brick-index-button" type="button">Brick Index</button>
           <button class="secondary-button" id="open-settings" type="button">Settings</button>
           <p class="high-score" id="menu-high-score"></p>
           <h3 class="leaderboard-title">ENDLESS LEADERBOARD</h3>
           <ol class="leaderboard-list" id="menu-leaderboard"></ol>
+        </div>
+      </section>
+      <section class="screen" id="screen-brick-index" aria-labelledby="brick-index-title" hidden>
+        <div class="menu-panel brick-index-panel">
+          <p class="eyebrow">FIELD GUIDE</p>
+          <h2 id="brick-index-title">BRICK INDEX</h2>
+          <p class="screen-copy">Identify each brick and its effect.</p>
+          <ul class="brick-index-list">
+            <li><img class="brick-index-image" data-brick-icon="normal" alt=""><span><strong>Normal</strong> — breaks in one hit</span></li>
+            <li><img class="brick-index-image" data-brick-icon="armored" alt=""><span><strong>Armored</strong> — needs two hits</span></li>
+            <li><img class="brick-index-image" data-brick-icon="giant" alt=""><span><strong>Giant</strong> — large brick, needs four hits</span></li>
+            <li><img class="brick-index-image" data-brick-icon="heart" alt=""><span><strong>Heart</strong> — grants an extra life</span></li>
+            <li><img class="brick-index-image" data-brick-icon="grow" alt=""><span><strong>Grow</strong> — temporarily widens the paddle</span></li>
+            <li><img class="brick-index-image" data-brick-icon="poison" alt=""><span><strong>Poison</strong> — temporarily shrinks the paddle</span></li>
+            <li><img class="brick-index-image" data-brick-icon="slow" alt=""><span><strong>Slow</strong> — temporarily slows the ball</span></li>
+            <li><img class="brick-index-image" data-brick-icon="jackpot" alt=""><span><strong>Jackpot</strong> — awards 100 points</span></li>
+            <li><img class="brick-index-image" data-brick-icon="bomb" alt=""><span><strong>Bomb</strong> — blasts nearby bricks</span></li>
+            <li><img class="brick-index-image" data-brick-icon="projectile" alt=""><span><strong>Projectile</strong> — fires shots toward the paddle</span></li>
+            <li><img class="brick-index-image" data-brick-icon="shooter" alt=""><span><strong>Laser</strong> — fires a beam at the paddle (level 10+)</span></li>
+          </ul>
+          <button class="primary-button" id="brick-index-back" type="button">Back to Menu</button>
         </div>
       </section>
       <section class="screen" id="screen-ready" aria-labelledby="ready-title" hidden>
@@ -93,22 +115,6 @@
         </div>
       </section>
     </div>
-    <details class="brick-legend">
-      <summary>Brick index</summary>
-      <ul class="brick-legend-list">
-        <li><span class="brick-swatch normal"></span><span><strong>Normal</strong> — breaks in one hit</span></li>
-        <li><span class="brick-swatch armored"></span><span><strong>Armored</strong> — needs two hits</span></li>
-        <li><span class="brick-swatch giant"></span><span><strong>Giant</strong> — large brick, needs four hits</span></li>
-        <li><span class="brick-swatch heart"></span><span><strong>Heart</strong> — grants an extra life</span></li>
-        <li><span class="brick-swatch grow"></span><span><strong>Grow</strong> — temporarily widens the paddle</span></li>
-        <li><span class="brick-swatch poison"></span><span><strong>Poison</strong> — temporarily shrinks the paddle</span></li>
-        <li><span class="brick-swatch slow"></span><span><strong>Slow</strong> — temporarily slows the ball</span></li>
-        <li><span class="brick-swatch jackpot"></span><span><strong>Jackpot</strong> — awards 100 points</span></li>
-        <li><span class="brick-swatch bomb"></span><span><strong>Bomb</strong> — blasts nearby bricks</span></li>
-        <li><span class="brick-swatch projectile"></span><span><strong>Projectile</strong> — fires shots toward the paddle</span></li>
-        <li><span class="brick-swatch shooter"></span><span><strong>Laser</strong> — fires a beam at the paddle (level 10+)</span></li>
-      </ul>
-    </details>
     <div class="game-footer">
       <p>Move with ← → or A / D. Auto-aim follows your paddle; click a nearby brick to lock on.</p>
       <button id="pause-button" type="button" aria-label="Pause game" title="Pause game">Ⅱ</button>
@@ -121,5 +127,6 @@
   <script src="game.js"></script>
   <script src="bricks.js"></script>
   <script src="collisions.js"></script>
+  <script src="brick-index.js"></script>
 </body>
 </html>

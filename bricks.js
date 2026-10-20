@@ -26,13 +26,12 @@ function makeBricks(currentWave) {
   const left = (WIDTH - totalWidth) / 2;
   const desiredCount = Math.min(MAX_BRICKS, 32 + (currentWave - 1) * 14);
   const maxFullRows = Math.floor(MAX_BRICKS / BRICK_COLUMNS) * BRICK_COLUMNS;
-  const count = Math.min(maxFullRows, Math.ceil(desiredCount / BRICK_COLUMNS) * BRICK_COLUMNS);
+  const rowCount = Math.min(maxFullRows / BRICK_COLUMNS, Math.ceil(desiredCount / BRICK_COLUMNS));
   const giantTarget = currentWave >= 5 ? 3 : currentWave >= 3 ? 2 : 1;
-  const rows = Math.ceil((count + giantTarget * 3) / BRICK_COLUMNS);
-  const cells = Array.from({ length: rows * BRICK_COLUMNS }, (_, index) => index);
+  const cells = Array.from({ length: rowCount * BRICK_COLUMNS }, (_, index) => index);
   const giantAnchors = shuffle(cells.filter((cell) =>
     cell % BRICK_COLUMNS < BRICK_COLUMNS - 1 &&
-    Math.floor(cell / BRICK_COLUMNS) < rows - 1
+    Math.floor(cell / BRICK_COLUMNS) < rowCount - 1
   ));
   const occupiedCells = new Set();
 
@@ -60,7 +59,7 @@ function makeBricks(currentWave) {
     }
   }
 
-  for (const index of shuffle(cells)) {
+  for (const index of cells) {
     if (occupiedCells.has(index)) {
       continue;
     }
@@ -100,9 +99,6 @@ function makeBricks(currentWave) {
       width: BRICK_WIDTH,
       height: BRICK_HEIGHT
     });
-    if (list.length === count) {
-      break;
-    }
   }
 
   return list;

@@ -659,7 +659,7 @@ function frame(now) {
 function showScreen(state) {
   gameState = state;
   const screen = state === "paused" ? "pause" : state;
-  for (const name of ["menu", "ready", "settings", "pause", "gameover", "victory"]) {
+  for (const name of ["menu", "brick-index", "ready", "settings", "pause", "gameover", "victory"]) {
     document.getElementById(`screen-${name}`).hidden = name !== screen;
   }
 }
@@ -861,6 +861,8 @@ document.getElementById("account-form").addEventListener("submit", (event) => {
   message.dataset.error = String(!result.valid);
   if (result.valid) renderEndlessLeaderboard();
 });
+document.getElementById("brick-index-button").addEventListener("click", () => showScreen("brick-index"));
+document.getElementById("brick-index-back").addEventListener("click", () => showScreen("menu"));
 document.getElementById("continue-button").hidden = !loadCampaignSave();
 renderEndlessLeaderboard();
 window.addEventListener("pagehide", saveCampaign);
