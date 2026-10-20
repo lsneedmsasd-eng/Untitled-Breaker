@@ -82,7 +82,7 @@ function makeBricks(currentWave) {
       type = "poison";
     } else if (currentWave >= 2 && roll < 0.32) {
       type = "projectile";
-    } else if (currentWave >= 2 && shooterCount < MAX_LASER_BLOCKS && roll < 0.36) {
+    } else if (currentWave >= 10 && shooterCount < MAX_LASER_BLOCKS && roll < 0.36) {
       type = "shooter";
     } else if (currentWave >= 3 && roll < 0.56) {
       type = "armored";
@@ -185,6 +185,11 @@ function spawnBrickProjectiles(brick) {
 
 function updateBrickWeapons(deltaTime) {
   updateBrickProjectiles(deltaTime);
+
+  if (wave < 10) {
+    brickBeam = null;
+    return;
+  }
 
   if (brickBeam) {
     brickBeam.timer -= deltaTime;

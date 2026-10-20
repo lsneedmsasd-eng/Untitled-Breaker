@@ -265,6 +265,57 @@ canvas {
   gap: 12px;
 }
 
+.brick-legend {
+  margin-top: 14px;
+  border: 1px solid rgba(165, 243, 231, 0.2);
+  border-radius: 5px;
+  background: rgba(12, 26, 35, 0.72);
+  color: #d7e4e4;
+  font-size: 12px;
+}
+
+.brick-legend summary {
+  padding: 10px 12px;
+  color: #fff4c2;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.brick-legend-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  gap: 8px 16px;
+  margin: 0;
+  padding: 2px 12px 12px;
+  list-style: none;
+}
+
+.brick-legend-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.brick-swatch {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: #ff765e;
+}
+
+.brick-swatch.armored { background: #f3d56c; }
+.brick-swatch.giant { background: #f29b55; }
+.brick-swatch.heart { background: #f05b78; }
+.brick-swatch.grow { background: #55cbb2; }
+.brick-swatch.poison { background: #b6f45b; }
+.brick-swatch.slow { background: #789be8; }
+.brick-swatch.jackpot { background: #f3d45b; }
+.brick-swatch.bomb { background: #fa6658; }
+.brick-swatch.projectile { background: #65d5e8; }
+.brick-swatch.shooter { background: #f05b70; }
+
 .game-footer p {
   margin: 14px 0 0;
   color: #9fb3bf;

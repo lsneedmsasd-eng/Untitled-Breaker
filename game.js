@@ -30,9 +30,9 @@ const PADDLE_BASE_WIDTH = 110;
 const PADDLE_SLOW_FACTOR = 0.5;
 const PADDLE_SLOW_DURATION = 1600;
 const MAX_LIVES = 5;
-const BALL_SHRINK_DURATION = 7000;
-const BALL_MIN_SIZE = 6;
-let ballShrinkTimer = 0;
+const PADDLE_SHRINK_DURATION = 7000;
+const PADDLE_MIN_WIDTH = PADDLE_BASE_WIDTH * 0.55;
+let paddleShrinkTimer = 0;
 let popupTimer = 0;
 const PADDLE_GROW_DURATION = 8000;
 let paddleGrowTimer = 0;
@@ -111,7 +111,6 @@ function resetBall() {
   ball.vx = 0;
   ball.vy = 0;
   ballSlowTimer = 0;
-  ballShrinkTimer = 0;
   ball.width = 12;
   ball.height = 12;
   positionBallOnPaddle();
@@ -274,7 +273,7 @@ function update() {
   movePaddle();
   updatePaddleGrow(STEP);
   updateBallSlow(STEP);
-  updateBallShrink(STEP);
+  updatePaddleShrink(STEP);
   applyPassiveAim();
   moveBall();
 
@@ -321,11 +320,16 @@ function grantHeart() {
 }
 
 function activatePaddleGrow() {
-  const center = paddle.x + paddle.width / 2;
-  paddle.width = PADDLE_BASE_WIDTH * 1.6;
-  paddle.x = Math.max(0, Math.min(WIDTH - paddle.width, center - paddle.width / 2));
+  paddleShrinkTimer = 0;
   paddleGrowTimer = PADDLE_GROW_DURATION;
+  setPaddleWidth(PADDLE_BASE_WIDTH * 1.6);
   showGamePopup("PADDLE POWER UP!", "power");
+}
+
+function setPaddleWidth(width) {
+  const center = paddle.x + paddle.width / 2;
+  paddle.width = width;
+  paddle.x = Math.max(0, Math.min(WIDTH - paddle.width, center - paddle.width / 2));
 }
 
 function updatePaddleGrow(deltaTime) {
@@ -333,10 +337,26 @@ function updatePaddleGrow(deltaTime) {
     return;
   }
   paddleGrowTimer = Math.max(0, paddleGrowTimer - deltaTime);
-  if (paddleGrowTimer === 0) {
-    const center = paddle.x + paddle.width / 2;
-    paddle.width = PADDLE_BASE_WIDTH;
-    paddle.x = Math.max(0, Math.min(WIDTH - paddle.width, center - paddle.width / 2));
+  if (paddleGrowTimer === 0 && paddleShrinkTimer === 0) {
+    setPaddleWidth(PADDLE_BASE_WIDTH);
+  }
+}
+
+function applyPaddleShrink() {
+  paddleGrowTimer = 0;
+  paddleShrinkTimer = PADDLE_SHRINK_DURATION;
+  setPaddleWidth(PADDLE_MIN_WIDTH);
+  playSound("poison");
+  showGamePopup("POISONED! PADDLE SHRINKING", "poison");
+}
+
+function updatePaddleShrink(deltaTime) {
+  if (paddleShrinkTimer <= 0) {
+    return;
+  }
+  paddleShrinkTimer = Math.max(0, paddleShrinkTimer - deltaTime);
+  if (paddleShrinkTimer === 0 && paddleGrowTimer === 0) {
+    setPaddleWidth(PADDLE_BASE_WIDTH);
   }
 }
 
@@ -365,27 +385,6 @@ function updateBallSlow(deltaTime) {
   if (ballSlowTimer === 0) {
     ball.vx /= BALL_SLOW_FACTOR;
     ball.vy /= BALL_SLOW_FACTOR;
-  }
-}
-
-function applyBallShrink() {
-  ballShrinkTimer = BALL_SHRINK_DURATION;
-  playSound("poison");
-  showGamePopup("POISONED! BALL SHRINKING", "poison");
-}
-
-function updateBallShrink(deltaTime) {
-  if (ballShrinkTimer <= 0) {
-    return;
-  }
-  ballShrinkTimer = Math.max(0, ballShrinkTimer - deltaTime);
-  const progress = 1 - ballShrinkTimer / BALL_SHRINK_DURATION;
-  const size = 12 - (12 - BALL_MIN_SIZE) * progress;
-  ball.width = size;
-  ball.height = size;
-  if (ballShrinkTimer === 0) {
-    ball.width = 12;
-    ball.height = 12;
   }
 }
 
@@ -549,9 +548,12 @@ function draw() {
   ctx.textAlign = "right";
   ctx.fillText(`LIVES  ${lives}   BRICKS  ${bricks.length}`, WIDTH - 18, 25);
   ctx.textAlign = "left";
-  if (aimCooldown > 0) {
+  const centerStatuses = [];
+  if (aimCooldown > 0) centerStatuses.push(`AIM ${Math.ceil(aimCooldown / 1000)}s`);
+  if (paddleShrinkTimer > 0) centerStatuses.push(`POISON ${Math.ceil(paddleShrinkTimer / 1000)}s`);
+  if (centerStatuses.length > 0) {
     ctx.textAlign = "center";
-    ctx.fillText(`AIM ${Math.ceil(aimCooldown / 1000)}s`, WIDTH / 2, 43);
+    ctx.fillText(centerStatuses.join("   "), WIDTH / 2, 43);
     ctx.textAlign = "left";
   }
   if (paddleGrowTimer > 0) {
@@ -564,13 +566,6 @@ function draw() {
     ctx.fillText(`SLOW ${Math.ceil(ballSlowTimer / 1000)}s`, WIDTH - 18, 43);
     ctx.textAlign = "left";
   }
-  if (ballShrinkTimer > 0) {
-    ctx.fillStyle = "#c8ff79";
-    ctx.textAlign = "center";
-    ctx.fillText(`POISON ${Math.ceil(ballShrinkTimer / 1000)}s`, WIDTH / 2, 43);
-    ctx.textAlign = "left";
-  }
-
   drawBricks();  // bricks.js
   drawBrickWeapons();  // bricks.js
   drawParticles();
@@ -728,6 +723,7 @@ function saveCampaign() {
     selectedTargetIndex: bricks.indexOf(selectedTarget),
     aimCooldown,
     paddleGrowTimer,
+    paddleShrinkTimer,
     paddleSlowTimer,
     ballSlowTimer,
     resumeState: gameState === "playing" ? "playing" : "ready",
@@ -773,6 +769,7 @@ function startGame(mode = "campaign", saved = null) {
     selectedTarget = bricks[saved.selectedTargetIndex] || null;
     aimCooldown = saved.aimCooldown || 0;
     paddleGrowTimer = saved.paddleGrowTimer || 0;
+    paddleShrinkTimer = saved.paddleShrinkTimer || 0;
     paddleSlowTimer = saved.paddleSlowTimer || 0;
     ballSlowTimer = saved.ballSlowTimer || 0;
     projectiles = saved.projectiles || [];
@@ -794,6 +791,7 @@ function startGame(mode = "campaign", saved = null) {
     aimCooldown = 0;
     paddle.width = PADDLE_BASE_WIDTH;
     paddleGrowTimer = 0;
+    paddleShrinkTimer = 0;
     paddleSlowTimer = 0;
     ballSlowTimer = 0;
     brickBeam = null;
