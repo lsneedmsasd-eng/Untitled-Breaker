@@ -104,9 +104,7 @@ function detonateBomb(source) {
 
       bricks.splice(index, 1);
       index--;
-      if (neighbor === selectedTarget) {
-        selectedTarget = null;
-      }
+      clearActiveAimForDestroyedTarget(neighbor);
       spawnBrickParticles(neighbor);
       addBrickScore();
       if (neighbor.type === "bomb") {
@@ -162,9 +160,7 @@ function bounceOffBricks() {
           : "brick";
       playSound(sound);
       spawnBrickParticles(brick);
-      if (brick === selectedTarget) {
-        selectedTarget = null;
-      }
+      clearActiveAimForDestroyedTarget(brick);
       bricks.splice(index, 1);
       applyBrickReward(brick);
       if (brick.type === "bomb") {

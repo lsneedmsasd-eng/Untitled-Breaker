@@ -155,6 +155,7 @@ const paddle = {
 };
 const AIM_RANGE = 260;
 const AIM_SWITCH_COOLDOWN = 5000;
+const AIM_TARGET_DESTROYED_COOLDOWN = 15000;
 const PASSIVE_AIM_STRENGTH = 0.004;
 const PASSIVE_AIM_RANGE = 220;
 
@@ -233,6 +234,14 @@ function changeActiveAim(target) {
 
   selectedTarget = target;
   aimCooldown = AIM_SWITCH_COOLDOWN;
+}
+
+function clearActiveAimForDestroyedTarget(brick) {
+  if (brick !== selectedTarget) {
+    return;
+  }
+  selectedTarget = null;
+  aimCooldown = AIM_TARGET_DESTROYED_COOLDOWN;
 }
 
 canvas.addEventListener("click", function (event) {
@@ -769,7 +778,7 @@ function startGame(mode = "campaign", saved = null) {
     paddle.x = saved.paddle.x;
     paddle.width = saved.paddle.width;
     selectedTarget = bricks[saved.selectedTargetIndex] || null;
-    aimCooldown = Math.min(saved.aimCooldown || 0, AIM_SWITCH_COOLDOWN);
+    aimCooldown = Math.min(saved.aimCooldown || 0, AIM_TARGET_DESTROYED_COOLDOWN);
     paddleGrowTimer = saved.paddleGrowTimer || 0;
     paddleShrinkTimer = saved.paddleShrinkTimer || 0;
     paddleSlowTimer = saved.paddleSlowTimer || 0;
