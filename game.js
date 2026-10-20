@@ -171,6 +171,8 @@ let gameState = "menu";
 let selectedTarget = null;
 let passiveAimTarget = null;
 let aimCooldown = 0;
+let hasSelectedActiveAim = false;
+let aimSwitchCooldownActive = false;
 let particlesEnabled = true;
 let particles = [];
 let pausedState = "playing";
@@ -227,6 +229,27 @@ function getCanvasPoint(event) {
   };
 }
 
+function changeActiveAim(target) {
+  if (target === selectedTarget) {
+    return;
+  }
+  if (aimCooldown > 0 && (!selectedTarget || aimSwitchCooldownActive)) {
+    return;
+  }
+
+  if (!target) {
+    selectedTarget = null;
+    aimCooldown = AIM_SWITCH_COOLDOWN;
+    aimSwitchCooldownActive = true;
+    return;
+  }
+
+  selectedTarget = target;
+  aimCooldown = hasSelectedActiveAim ? AIM_SWITCH_COOLDOWN : AIM_COOLDOWN;
+  aimSwitchCooldownActive = hasSelectedActiveAim;
+  hasSelectedActiveAim = true;
+}
+
 canvas.addEventListener("click", function (event) {
   if (gameState === "ready") {
     launchBall();
@@ -235,10 +258,6 @@ canvas.addEventListener("click", function (event) {
   if (gameState !== "playing") {
     return;
   }
-  if (aimCooldown > 0) {
-    return;
-  }
-
   const point = getCanvasPoint(event);
   const target = bricks.find((brick) =>
     point.x >= brick.x && point.x <= brick.x + brick.width &&
@@ -246,13 +265,9 @@ canvas.addEventListener("click", function (event) {
   );
 
   const paddleCenter = paddle.x + paddle.width / 2;
-  if (target && Math.abs(target.x + target.width / 2 - paddleCenter) <= AIM_RANGE) {
-    const isSwitchingTarget = selectedTarget && selectedTarget !== target;
-    selectedTarget = target;
-    aimCooldown = isSwitchingTarget ? AIM_SWITCH_COOLDOWN : AIM_COOLDOWN;
-  } else {
-    selectedTarget = null;
-  }
+  changeActiveAim(
+    target && Math.abs(target.x + target.width / 2 - paddleCenter) <= AIM_RANGE ? target : null
+  );
 });
 
 
@@ -271,6 +286,9 @@ function update() {
   }
 
   aimCooldown = Math.max(0, aimCooldown - STEP);
+  if (aimCooldown === 0) {
+    aimSwitchCooldownActive = false;
+  }
   updatePaddleSlow(STEP);
   movePaddle();
   updatePaddleGrow(STEP);
@@ -724,6 +742,8 @@ function saveCampaign() {
     paddle: { x: paddle.x, width: paddle.width },
     selectedTargetIndex: bricks.indexOf(selectedTarget),
     aimCooldown,
+    hasSelectedActiveAim,
+    aimSwitchCooldownActive,
     paddleGrowTimer,
     paddleShrinkTimer,
     paddleSlowTimer,
@@ -770,6 +790,9 @@ function startGame(mode = "campaign", saved = null) {
     paddle.width = saved.paddle.width;
     selectedTarget = bricks[saved.selectedTargetIndex] || null;
     aimCooldown = saved.aimCooldown || 0;
+    hasSelectedActiveAim = saved.hasSelectedActiveAim ?? saved.selectedTargetIndex >= 0;
+    aimSwitchCooldownActive = saved.aimSwitchCooldownActive ??
+      (hasSelectedActiveAim && aimCooldown > 0 && aimCooldown <= AIM_SWITCH_COOLDOWN);
     paddleGrowTimer = saved.paddleGrowTimer || 0;
     paddleShrinkTimer = saved.paddleShrinkTimer || 0;
     paddleSlowTimer = saved.paddleSlowTimer || 0;
@@ -791,6 +814,8 @@ function startGame(mode = "campaign", saved = null) {
     lives = 3;
     selectedTarget = null;
     aimCooldown = 0;
+    hasSelectedActiveAim = false;
+    aimSwitchCooldownActive = false;
     paddle.width = PADDLE_BASE_WIDTH;
     paddleGrowTimer = 0;
     paddleShrinkTimer = 0;
