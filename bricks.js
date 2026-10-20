@@ -11,6 +11,14 @@ const BRICKS_TOP = 50;
 const MAX_BRICKS = 250;
 const MAX_LASER_BLOCKS = 2;
 
+function shuffle(items) {
+  for (let index = items.length - 1; index > 0; index--) {
+    const otherIndex = Math.floor(Math.random() * (index + 1));
+    [items[index], items[otherIndex]] = [items[otherIndex], items[index]];
+  }
+  return items;
+}
+
 function makeBricks(currentWave) {
   const list = [];
   let shooterCount = 0;
@@ -19,50 +27,66 @@ function makeBricks(currentWave) {
   const desiredCount = Math.min(MAX_BRICKS, 32 + (currentWave - 1) * 14);
   const maxFullRows = Math.floor(MAX_BRICKS / BRICK_COLUMNS) * BRICK_COLUMNS;
   const count = Math.min(maxFullRows, Math.ceil(desiredCount / BRICK_COLUMNS) * BRICK_COLUMNS);
-  const giantAnchors = currentWave >= 5 ? [17, 43, 69] : currentWave >= 3 ? [17, 43] : [17];
-  const giantStarts = new Set();
-  const giantCells = new Set();
+  const giantTarget = currentWave >= 5 ? 3 : currentWave >= 3 ? 2 : 1;
+  const rows = Math.ceil((count + giantTarget * 3) / BRICK_COLUMNS);
+  const cells = Array.from({ length: rows * BRICK_COLUMNS }, (_, index) => index);
+  const giantAnchors = shuffle(cells.filter((cell) =>
+    cell % BRICK_COLUMNS < BRICK_COLUMNS - 1 &&
+    Math.floor(cell / BRICK_COLUMNS) < rows - 1
+  ));
+  const occupiedCells = new Set();
 
   for (const anchor of giantAnchors) {
-    const col = anchor % BRICK_COLUMNS;
     const coveredCells = [anchor, anchor + 1, anchor + BRICK_COLUMNS, anchor + BRICK_COLUMNS + 1];
-    if (col >= BRICK_COLUMNS - 1 || coveredCells.some((cell) => cell >= count)) {
+    if (coveredCells.some((cell) => occupiedCells.has(cell))) {
       continue;
     }
-    giantStarts.add(anchor);
+    const row = Math.floor(anchor / BRICK_COLUMNS);
+    const col = anchor % BRICK_COLUMNS;
+    list.push({
+      x: left + col * (BRICK_WIDTH + BRICK_GAP),
+      y: BRICKS_TOP + row * (BRICK_HEIGHT + BRICK_ROW_GAP),
+      row,
+      type: "giant",
+      hits: 4,
+      width: BRICK_WIDTH * 2 + BRICK_GAP,
+      height: BRICK_HEIGHT * 2 + BRICK_ROW_GAP
+    });
     for (const cell of coveredCells) {
-      giantCells.add(cell);
+      occupiedCells.add(cell);
+    }
+    if (list.length === giantTarget) {
+      break;
     }
   }
 
-  for (let index = 0; index < count; index++) {
-    if (giantCells.has(index) && !giantStarts.has(index)) {
+  for (const index of shuffle(cells)) {
+    if (occupiedCells.has(index)) {
       continue;
     }
     const row = Math.floor(index / BRICK_COLUMNS);
     const col = index % BRICK_COLUMNS;
-    const shooterColumn = (row * 5 + 2) % BRICK_COLUMNS;
-    const type = giantStarts.has(index)
-      ? "giant"
-      : index % 32 === 8
-        ? "heart"
-        : index % 32 === 11
-          ? "grow"
-          : index % 32 === 14
-            ? "jackpot"
-          : index % 32 === 21
-            ? "slow"
-            : index % 32 === 26
-              ? "bomb"
-            : index % 32 === 29
-              ? "poison"
-            : currentWave >= 2 && shooterCount < MAX_LASER_BLOCKS && col === shooterColumn
-              ? "shooter"
-              : currentWave >= 2 && index % 13 === 2
-                ? "projectile"
-                : currentWave >= 3 && index % 5 === 0
-                  ? "armored"
-                  : "normal";
+    const roll = Math.random();
+    let type = "normal";
+    if (roll < 0.04) {
+      type = "heart";
+    } else if (roll < 0.08) {
+      type = "grow";
+    } else if (roll < 0.12) {
+      type = "jackpot";
+    } else if (roll < 0.16) {
+      type = "slow";
+    } else if (roll < 0.20) {
+      type = "bomb";
+    } else if (roll < 0.24) {
+      type = "poison";
+    } else if (currentWave >= 2 && roll < 0.32) {
+      type = "projectile";
+    } else if (currentWave >= 2 && shooterCount < MAX_LASER_BLOCKS && roll < 0.36) {
+      type = "shooter";
+    } else if (currentWave >= 3 && roll < 0.56) {
+      type = "armored";
+    }
 
     if (type === "shooter") {
       shooterCount++;
@@ -72,10 +96,13 @@ function makeBricks(currentWave) {
       y: BRICKS_TOP + row * (BRICK_HEIGHT + BRICK_ROW_GAP),
       row,
       type,
-      hits: type === "giant" ? 4 : type === "armored" ? 2 : 1,
-      width: type === "giant" ? BRICK_WIDTH * 2 + BRICK_GAP : BRICK_WIDTH,
-      height: type === "giant" ? BRICK_HEIGHT * 2 + BRICK_ROW_GAP : BRICK_HEIGHT
+      hits: type === "armored" ? 2 : 1,
+      width: BRICK_WIDTH,
+      height: BRICK_HEIGHT
     });
+    if (list.length === count) {
+      break;
+    }
   }
 
   return list;
