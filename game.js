@@ -154,7 +154,6 @@ const paddle = {
   speed: 8
 };
 const AIM_RANGE = 260;
-const AIM_COOLDOWN = 15000;
 const AIM_SWITCH_COOLDOWN = 5000;
 const PASSIVE_AIM_STRENGTH = 0.004;
 const PASSIVE_AIM_RANGE = 220;
@@ -171,8 +170,6 @@ let gameState = "menu";
 let selectedTarget = null;
 let passiveAimTarget = null;
 let aimCooldown = 0;
-let hasSelectedActiveAim = false;
-let aimSwitchCooldownActive = false;
 let particlesEnabled = true;
 let particles = [];
 let pausedState = "playing";
@@ -230,24 +227,12 @@ function getCanvasPoint(event) {
 }
 
 function changeActiveAim(target) {
-  if (target === selectedTarget) {
-    return;
-  }
-  if (aimCooldown > 0 && (!selectedTarget || aimSwitchCooldownActive)) {
-    return;
-  }
-
-  if (!target) {
-    selectedTarget = null;
-    aimCooldown = AIM_SWITCH_COOLDOWN;
-    aimSwitchCooldownActive = true;
+  if (target === selectedTarget || aimCooldown > 0) {
     return;
   }
 
   selectedTarget = target;
-  aimCooldown = hasSelectedActiveAim ? AIM_SWITCH_COOLDOWN : AIM_COOLDOWN;
-  aimSwitchCooldownActive = hasSelectedActiveAim;
-  hasSelectedActiveAim = true;
+  aimCooldown = AIM_SWITCH_COOLDOWN;
 }
 
 canvas.addEventListener("click", function (event) {
@@ -286,9 +271,6 @@ function update() {
   }
 
   aimCooldown = Math.max(0, aimCooldown - STEP);
-  if (aimCooldown === 0) {
-    aimSwitchCooldownActive = false;
-  }
   updatePaddleSlow(STEP);
   movePaddle();
   updatePaddleGrow(STEP);
@@ -742,8 +724,6 @@ function saveCampaign() {
     paddle: { x: paddle.x, width: paddle.width },
     selectedTargetIndex: bricks.indexOf(selectedTarget),
     aimCooldown,
-    hasSelectedActiveAim,
-    aimSwitchCooldownActive,
     paddleGrowTimer,
     paddleShrinkTimer,
     paddleSlowTimer,
@@ -789,10 +769,7 @@ function startGame(mode = "campaign", saved = null) {
     paddle.x = saved.paddle.x;
     paddle.width = saved.paddle.width;
     selectedTarget = bricks[saved.selectedTargetIndex] || null;
-    aimCooldown = saved.aimCooldown || 0;
-    hasSelectedActiveAim = saved.hasSelectedActiveAim ?? saved.selectedTargetIndex >= 0;
-    aimSwitchCooldownActive = saved.aimSwitchCooldownActive ??
-      (hasSelectedActiveAim && aimCooldown > 0 && aimCooldown <= AIM_SWITCH_COOLDOWN);
+    aimCooldown = Math.min(saved.aimCooldown || 0, AIM_SWITCH_COOLDOWN);
     paddleGrowTimer = saved.paddleGrowTimer || 0;
     paddleShrinkTimer = saved.paddleShrinkTimer || 0;
     paddleSlowTimer = saved.paddleSlowTimer || 0;
@@ -814,8 +791,6 @@ function startGame(mode = "campaign", saved = null) {
     lives = 3;
     selectedTarget = null;
     aimCooldown = 0;
-    hasSelectedActiveAim = false;
-    aimSwitchCooldownActive = false;
     paddle.width = PADDLE_BASE_WIDTH;
     paddleGrowTimer = 0;
     paddleShrinkTimer = 0;
