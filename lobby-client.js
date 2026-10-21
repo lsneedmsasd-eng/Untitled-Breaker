@@ -1,9 +1,11 @@
-const socket = io();
+const socket = typeof io === "function" ? io() : null;
 const lobbyStatus = document.getElementById("lobby-status");
 const lobbyJoinControls = document.getElementById("lobby-join-controls");
 const lobbyRoom = document.getElementById("lobby-room");
 const lobbyPlayers = document.getElementById("lobby-players");
 const createLobbyButton = document.getElementById("lobby-create");
+const joinForm = document.getElementById("lobby-join-form");
+const joinButton = joinForm.querySelector('button[type="submit"]');
 const readyButton = document.getElementById("lobby-ready");
 const startButton = document.getElementById("lobby-start");
 let activeRoom = null;
@@ -34,8 +36,8 @@ function renderLobby(room) {
     lobbyPlayers.append(item);
   }
 
-  const isHost = socket.id === room.hostId;
-  const self = room.players.find((player) => player.id === socket.id);
+  const isHost = socket?.id === room.hostId;
+  const self = room.players.find((player) => player.id === socket?.id);
   readyButton.hidden = isHost;
   readyButton.textContent = self?.ready ? "Cancel ready" : "Ready";
   startButton.hidden = !isHost;
@@ -50,35 +52,43 @@ function showLobbyError(message) {
 }
 
 function sendLobbyRequest(eventName, payload) {
+  if (!socket) {
+    showLobbyError("Lobby server unavailable. Start the game server and try again.");
+    return;
+  }
   socket.emit(eventName, payload, (result) => {
     if (!result?.ok) showLobbyError(result?.message || "Unable to connect to that lobby.");
   });
 }
 
 function sendCoOpInput(x) {
-  socket.emit("game:input", { x });
+  socket?.emit("game:input", { x });
 }
 
 function sendCoOpState(state) {
-  socket.emit("game:state", state);
+  socket?.emit("game:state", state);
 }
 
 function requestCoOpLaunch() {
-  socket.emit("game:launch");
+  socket?.emit("game:launch");
 }
 
 function requestCoOpRestart(mode) {
-  socket.emit("game:restart", { mode });
+  socket?.emit("game:restart", { mode });
 }
 
 function leaveCoOpSession() {
-  socket.emit("lobby:leave");
+  socket?.emit("lobby:leave");
   activeRoom = null;
   renderLobby(null);
 }
 
 document.getElementById("multiplayer-button").addEventListener("click", () => {
-  setLobbyStatus(socket.connected ? "Create a lobby or join with a room code." : "Connecting to the lobby server...");
+  if (!socket) {
+    setLobbyStatus("Lobby server unavailable. Start the game server and try again.", true);
+  } else {
+    setLobbyStatus(socket.connected ? "Create a lobby or join with a room code." : "Connecting to the lobby server...");
+  }
   showScreen("lobby");
 });
 
@@ -86,7 +96,7 @@ createLobbyButton.addEventListener("click", () => {
   sendLobbyRequest("lobby:create", { username: gamestate.username });
 });
 
-document.getElementById("lobby-join-form").addEventListener("submit", (event) => {
+joinForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const code = document.getElementById("lobby-code-input").value;
   sendLobbyRequest("lobby:join", { code, username: gamestate.username });
@@ -102,58 +112,65 @@ startButton.addEventListener("click", () => {
 });
 
 document.getElementById("lobby-leave").addEventListener("click", () => {
-  socket.emit("lobby:leave");
+  socket?.emit("lobby:leave");
   activeRoom = null;
   renderLobby(null);
   setLobbyStatus("You left the lobby.");
 });
 
 document.getElementById("lobby-back").addEventListener("click", () => {
-  if (activeRoom) socket.emit("lobby:leave");
+  if (activeRoom) socket?.emit("lobby:leave");
   activeRoom = null;
   renderLobby(null);
   showScreen("menu");
 });
 
-socket.on("connect", () => {
-  createLobbyButton.disabled = false;
-  setLobbyStatus("Create a lobby or join with a room code.");
-});
+if (socket) {
+  socket.on("connect", () => {
+    createLobbyButton.disabled = false;
+    joinButton.disabled = false;
+    setLobbyStatus("Create a lobby or join with a room code.");
+  });
 
-socket.on("connect_error", () => {
+  socket.on("connect_error", () => {
+    createLobbyButton.disabled = true;
+    joinButton.disabled = true;
+    setLobbyStatus("Lobby server unavailable. Try again when connected.", true);
+  });
+
+  socket.on("disconnect", () => {
+    activeRoom = null;
+    renderLobby(null);
+    setLobbyStatus("Connection lost. Reopen the lobby to reconnect.", true);
+    if (coOpGame.active) showGamePopup("CONNECTION LOST", "warning");
+  });
+
+  socket.on("lobby:state", (room) => {
+    renderLobby(room);
+    syncCoOpPlayers(room.players);
+  });
+
+  socket.on("lobby:started", ({ code, mode, hostId, players }) => {
+    activeRoom = { code, hostId, players };
+    startGame(mode);
+    enableCoOpGame({ localId: socket.id, hostId, players });
+  });
+
+  socket.on("game:input", ({ playerId, x }) => updateCoOpPlayerInput(playerId, x));
+  socket.on("game:state", applyCoOpSnapshot);
+  socket.on("game:launch", () => {
+    if (coOpGame.active && coOpGame.isHost) launchBall();
+  });
+  socket.on("game:restart", ({ mode }) => {
+    if (coOpGame.active && coOpGame.isHost) startGame(mode);
+  });
+  socket.on("game:host-left", () => {
+    if (!coOpGame.active) return;
+    showGamePopup("HOST LEFT THE GAME", "warning");
+    endCoOpGame();
+    showScreen("menu");
+  });
+} else {
   createLobbyButton.disabled = true;
-  setLobbyStatus("Lobby server unavailable. Try again when connected.", true);
-});
-
-socket.on("disconnect", () => {
-  activeRoom = null;
-  renderLobby(null);
-  setLobbyStatus("Connection lost. Reopen the lobby to reconnect.", true);
-  if (coOpGame.active) showGamePopup("CONNECTION LOST", "warning");
-});
-
-socket.on("lobby:state", (room) => {
-  renderLobby(room);
-  syncCoOpPlayers(room.players);
-});
-
-socket.on("lobby:started", ({ code, mode, hostId, players }) => {
-  activeRoom = { code, hostId, players };
-  startGame(mode);
-  enableCoOpGame({ localId: socket.id, hostId, players });
-});
-
-socket.on("game:input", ({ playerId, x }) => updateCoOpPlayerInput(playerId, x));
-socket.on("game:state", applyCoOpSnapshot);
-socket.on("game:launch", () => {
-  if (coOpGame.active && coOpGame.isHost) launchBall();
-});
-socket.on("game:restart", ({ mode }) => {
-  if (coOpGame.active && coOpGame.isHost) startGame(mode);
-});
-socket.on("game:host-left", () => {
-  if (!coOpGame.active) return;
-  showGamePopup("HOST LEFT THE GAME", "warning");
-  endCoOpGame();
-  showScreen("menu");
-});
+  joinButton.disabled = true;
+}
