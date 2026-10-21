@@ -199,7 +199,7 @@ function updateBrickWeapons(deltaTime) {
         brickBeam.timer = LASER_FIRE_DURATION;
       }
     } else {
-      if (!brickBeam.hitPaddle && boxesTouch(paddle, brickBeam)) {
+      if (!brickBeam.hitPaddle && getActivePaddles().some((playerPaddle) => boxesTouch(playerPaddle, brickBeam))) {
         brickBeam.hitPaddle = true;
         loseLife();
       }
@@ -245,11 +245,12 @@ function updateBrickProjectiles(deltaTime) {
     const speed = projectile.speed * (projectile.slowTimer > 0 ? 0.35 : 1);
     projectile.y += speed * stepScale;
 
-    const touchesPaddle =
-      projectile.x + projectile.radius > paddle.x &&
-      projectile.x - projectile.radius < paddle.x + paddle.width &&
-      projectile.y + projectile.radius > paddle.y &&
-      projectile.y - projectile.radius < paddle.y + paddle.height;
+    const touchesPaddle = getActivePaddles().some((playerPaddle) =>
+      projectile.x + projectile.radius > playerPaddle.x &&
+      projectile.x - projectile.radius < playerPaddle.x + playerPaddle.width &&
+      projectile.y + projectile.radius > playerPaddle.y &&
+      projectile.y - projectile.radius < playerPaddle.y + playerPaddle.height
+    );
     if (touchesPaddle && !projectile.touchingPaddle) {
       projectile.slowTimer = 1600;
       slowPaddle();

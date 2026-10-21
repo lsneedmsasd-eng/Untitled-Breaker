@@ -37,3 +37,7 @@ function validateUsername(value) {
   }
   return { valid: true, value: username };
 }
+
+if (typeof module !== "undefined") {
+  module.exports = { validateUsername };
+}

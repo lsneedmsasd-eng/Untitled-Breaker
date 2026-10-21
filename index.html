@@ -19,12 +19,37 @@
           <p class="screen-copy">Choose your run.</p>
           <button class="primary-button" id="campaign-button" type="button">50-Level Campaign</button>
           <button class="secondary-button" id="endless-button" type="button">Endless Mode</button>
+          <button class="secondary-button" id="multiplayer-button" type="button">Multiplayer Lobby</button>
           <button class="text-button" id="continue-button" type="button" hidden>Continue Campaign</button>
           <button class="secondary-button" id="brick-index-button" type="button">Brick Index</button>
           <button class="secondary-button" id="open-settings" type="button">Settings</button>
           <p class="high-score" id="menu-high-score"></p>
           <h3 class="leaderboard-title">ENDLESS LEADERBOARD</h3>
           <ol class="leaderboard-list" id="menu-leaderboard"></ol>
+        </div>
+      </section>
+      <section class="screen" id="screen-lobby" aria-labelledby="lobby-title" hidden>
+        <div class="menu-panel lobby-panel">
+          <p class="eyebrow">MULTIPLAYER</p>
+          <h2 id="lobby-title">LOBBY</h2>
+          <p class="screen-copy" id="lobby-status" aria-live="polite">Create a lobby or join with a room code.</p>
+          <div id="lobby-join-controls">
+            <button class="primary-button" id="lobby-create" type="button">Create Lobby</button>
+            <form class="lobby-join-form" id="lobby-join-form">
+              <label for="lobby-code-input">Room code</label>
+              <input id="lobby-code-input" name="code" type="text" maxlength="6" autocomplete="off" required>
+              <button class="secondary-button" type="submit">Join Lobby</button>
+            </form>
+          </div>
+          <div id="lobby-room" hidden>
+            <div class="lobby-room-code"><span>ROOM CODE</span><strong id="lobby-room-code"></strong></div>
+            <h3 class="leaderboard-title">PLAYERS <span id="lobby-player-count"></span></h3>
+            <ul class="lobby-player-list" id="lobby-players"></ul>
+            <button class="secondary-button" id="lobby-ready" type="button" hidden>Ready</button>
+            <button class="primary-button" id="lobby-start" type="button" hidden>Start campaign</button>
+            <button class="text-button" id="lobby-leave" type="button">Leave Lobby</button>
+          </div>
+          <button class="text-button" id="lobby-back" type="button">Back to Menu</button>
         </div>
       </section>
       <section class="screen" id="screen-brick-index" aria-labelledby="brick-index-title" hidden>
@@ -52,7 +77,7 @@
         <div class="menu-panel">
           <p class="eyebrow">READY</p>
           <h2 id="ready-title">YOUR SERVE</h2>
-          <p class="screen-copy">Move the paddle, then launch upward.</p>
+          <p class="screen-copy">Move your paddle to protect the team. Launch together.</p>
           <button class="primary-button" id="launch-button" type="button">Launch</button>
         </div>
       </section>
@@ -117,6 +142,7 @@
     </div>
     <div class="game-footer">
       <p>Move with ← → or A / D. Auto-aim follows your paddle; click a nearby brick to lock on.</p>
+      <button class="text-button" id="leave-coop-button" type="button" hidden>Leave Co-op</button>
       <button id="pause-button" type="button" aria-label="Pause game" title="Pause game">Ⅱ</button>
     </div>
   </main>
@@ -128,5 +154,7 @@
   <script src="bricks.js"></script>
   <script src="collisions.js"></script>
   <script src="brick-index.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="lobby-client.js"></script>
 </body>
 </html>

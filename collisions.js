@@ -39,23 +39,26 @@ function bounceOffWalls() {
 // ball.vy > 0 means "the ball is moving down", so it only bounces
 // when it is falling onto the paddle.
 function bounceOffPaddle() {
-  if (boxesTouch(ball, paddle) && ball.vy > 0) {
-    playSound("paddle");
-    ball.y = paddle.y - ball.height;  // sit on top of the paddle
-    const targetIsNearby = selectedTarget &&
-      bricks.includes(selectedTarget) &&
-      Math.abs(selectedTarget.x + selectedTarget.width / 2 - (paddle.x + paddle.width / 2)) <= AIM_RANGE;
+  const hitPaddle = getActivePaddles().find((playerPaddle) => boxesTouch(ball, playerPaddle));
+  if (!hitPaddle || ball.vy <= 0) {
+    return;
+  }
+  if (coOpGame.active) paddle.x = hitPaddle.x;
+  playSound("paddle");
+  ball.y = hitPaddle.y - ball.height;  // sit on top of the paddle
+  const targetIsNearby = selectedTarget &&
+    bricks.includes(selectedTarget) &&
+    Math.abs(selectedTarget.x + selectedTarget.width / 2 - (hitPaddle.x + hitPaddle.width / 2)) <= AIM_RANGE;
 
-    if (targetIsNearby) {
-      const deltaX = selectedTarget.x + selectedTarget.width / 2 - (ball.x + ball.width / 2);
-      const deltaY = selectedTarget.y + selectedTarget.height / 2 - (ball.y + ball.height / 2);
-      const distance = Math.hypot(deltaX, deltaY) || 1;
-      const speed = Math.hypot(ball.vx, ball.vy) || ballSpeed * Math.SQRT2;
-      ball.vx = deltaX / distance * speed;
-      ball.vy = deltaY / distance * speed;
-    } else {
-      ball.vy = -ball.vy;
-    }
+  if (targetIsNearby) {
+    const deltaX = selectedTarget.x + selectedTarget.width / 2 - (ball.x + ball.width / 2);
+    const deltaY = selectedTarget.y + selectedTarget.height / 2 - (ball.y + ball.height / 2);
+    const distance = Math.hypot(deltaX, deltaY) || 1;
+    const speed = Math.hypot(ball.vx, ball.vy) || ballSpeed * Math.SQRT2;
+    ball.vx = deltaX / distance * speed;
+    ball.vy = deltaY / distance * speed;
+  } else {
+    ball.vy = -ball.vy;
   }
 }
 
