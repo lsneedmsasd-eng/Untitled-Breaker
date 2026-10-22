@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: untitled-breaker-lobby
+    runtime: node
+    plan: free
+    region: ohio
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health

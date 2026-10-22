@@ -15,7 +15,20 @@ Run the lobby integration test with `npm test`.
 
 ## GitHub Pages
 
-GitHub Pages hosts the browser game, but it cannot run the Node lobby server. Deploy `npm start` to a Node hosting service and set its HTTPS URL, without a trailing slash, in `lobby-config.js`:
+GitHub Pages hosts the browser game, but it cannot run the Node lobby server. Deploy it to Render using the repository's `render.yaml` blueprint:
+
+1. In Render, choose **New > Blueprint** and connect this GitHub repository.
+2. Create the `untitled-breaker-lobby` web service.
+3. Copy the generated HTTPS service URL, without a trailing slash.
+4. Set that URL in `lobby-config.js`:
+
+```js
+window.LOBBY_SERVER_URL = "https://your-service.onrender.com";
+```
+
+Then commit and push the change so GitHub Pages receives it. Render's free service may sleep after inactivity; allow a few seconds on the first lobby connection while it starts.
+
+Alternatively, deploy `npm start` to another Node hosting service and set its URL in `lobby-config.js`:
 
 ```js
 window.LOBBY_SERVER_URL = "https://your-lobby-server.example.com";

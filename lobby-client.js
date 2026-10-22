@@ -17,7 +17,7 @@ function getLobbyServerUrl() {
 }
 
 const lobbyServerUrl = getLobbyServerUrl();
-const socket = typeof io === "function" && lobbyServerUrl ? io(lobbyServerUrl, { transports: ["websocket", "polling"] }) : null;
+const socket = typeof io === "function" && lobbyServerUrl ? io(lobbyServerUrl, { transports: ["websocket"] }) : null;
 const lobbyStatus = document.getElementById("lobby-status");
 const lobbyJoinControls = document.getElementById("lobby-join-controls");
 const lobbyRoom = document.getElementById("lobby-room");

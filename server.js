@@ -156,7 +156,7 @@ function createGameServer() {
       const room = rooms.get(roomCode);
       const now = Date.now();
       if (!room?.started || room.hostId !== socket.id || !payload ||
-        typeof payload !== "object" || now - (socket.data.lastGameStateAt || 0) < 30) {
+        typeof payload !== "object" || now - (socket.data.lastGameStateAt || 0) < 20) {
         return;
       }
       socket.data.lastGameStateAt = now;

@@ -229,7 +229,16 @@ function applyCoOpSnapshot(state) {
   if (!coOpGame.active || coOpGame.isHost || !state) return;
   Object.assign(ball, state.ball);
   Object.assign(paddle, state.paddle);
-  coOpGame.players = state.players;
+  const receivedPlayers = new Map(state.players.map((player) => [player.id, player]));
+  coOpGame.players.forEach((player) => {
+    const received = receivedPlayers.get(player.id);
+    if (!received) return;
+    player.targetX = received.x;
+    if (player.id !== coOpGame.localId && !Number.isFinite(player.x)) player.x = received.x;
+  });
+  state.players.forEach((received) => {
+    if (!coOpGame.players.some((player) => player.id === received.id)) coOpGame.players.push(received);
+  });
   bricks = state.bricks;
   score = state.score;
   wave = state.wave;
@@ -897,7 +906,14 @@ function frame(now) {
     leftover = leftover - STEP;
   }
 
-  if (coOpGame.active && coOpGame.isHost && now - lastCoOpSnapshot >= 50 && typeof sendCoOpState === "function") {
+  if (coOpGame.active && !coOpGame.isHost) {
+    for (const player of coOpGame.players) {
+      if (player.id === coOpGame.localId || !Number.isFinite(player.targetX)) continue;
+      player.x += (player.targetX - player.x) * 0.35;
+    }
+  }
+
+  if (coOpGame.active && coOpGame.isHost && now - lastCoOpSnapshot >= 33 && typeof sendCoOpState === "function") {
     sendCoOpState(buildCoOpSnapshot());
     lastCoOpSnapshot = now;
   }
