@@ -10,7 +10,7 @@ const MAX_PLAYERS = 8;
 function createGameServer() {
   const app = express();
   const httpServer = http.createServer(app);
-  const io = new Server(httpServer);
+  const io = new Server(httpServer, { cors: { origin: true } });
   const rooms = new Map();
 
   app.get("/health", (_request, response) => response.json({ ok: true }));

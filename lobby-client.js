@@ -1,4 +1,23 @@
-const socket = typeof io === "function" ? io() : null;
+function getLobbyServerUrl() {
+  const configuredUrl = typeof window !== "undefined" && window.LOBBY_SERVER_URL;
+  const queryUrl = typeof URLSearchParams !== "undefined" && typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("lobby")
+    : null;
+  const metaUrl = typeof document.querySelector === "function"
+    ? document.querySelector('meta[name="lobby-server"]')?.content
+    : null;
+  const serverUrl = String(configuredUrl || queryUrl || metaUrl || "").trim();
+  if (serverUrl) return serverUrl.replace(/\/$/, "");
+
+  if (typeof window !== "undefined" && window.location.protocol.startsWith("http") &&
+    !window.location.hostname.endsWith("github.io")) {
+    return window.location.origin;
+  }
+  return null;
+}
+
+const lobbyServerUrl = getLobbyServerUrl();
+const socket = typeof io === "function" && lobbyServerUrl ? io(lobbyServerUrl, { transports: ["websocket", "polling"] }) : null;
 const lobbyStatus = document.getElementById("lobby-status");
 const lobbyJoinControls = document.getElementById("lobby-join-controls");
 const lobbyRoom = document.getElementById("lobby-room");
