@@ -573,7 +573,7 @@ function draw() {
     : gameMode === "one-life"
       ? `ONE LIFE ${wave}`
       : gameMode === "time-attack"
-        ? `TIME ${Math.ceil(timeAttackRemaining / 1000)}s  WAVE ${wave}`
+        ? `RUSH ${Math.ceil(timeAttackRemaining / 1000)}s  WAVE ${wave}`
         : `LEVEL ${wave}/${CAMPAIGN_LEVELS}`;
   ctx.fillText(modeLabel, WIDTH / 2, 25);
   ctx.textAlign = "right";
