@@ -784,8 +784,14 @@ function clearCampaignSave() {
 }
 
 function startGame(mode = "campaign", saved = null) {
+  const supportedModes = ["campaign", "endless", "time-attack", "one-life"];
+  if (!supportedModes.includes(mode)) {
+    console.error(`Unknown game mode: ${mode}`);
+    return;
+  }
   initializeAudio();
   gameMode = mode;
+  timeAttackRemaining = mode === "time-attack" ? TIME_ATTACK_DURATION : 0;
   if (mode === "campaign" && saved) {
     wave = saved.wave;
     score = saved.score;
@@ -844,10 +850,15 @@ function startGame(mode = "campaign", saved = null) {
 }
 
 let settingsReturnState = "menu";
-document.getElementById("campaign-button").addEventListener("click", () => startGame("campaign"));
-document.getElementById("endless-button").addEventListener("click", () => startGame("endless"));
-document.getElementById("time-attack-button").addEventListener("click", () => startGame("time-attack"));
-document.getElementById("one-life-button").addEventListener("click", () => startGame("one-life"));
+const modeButtons = [
+  ["campaign-button", "campaign"],
+  ["endless-button", "endless"],
+  ["time-attack-button", "time-attack"],
+  ["one-life-button", "one-life"]
+];
+for (const [buttonId, mode] of modeButtons) {
+  document.getElementById(buttonId).addEventListener("click", () => startGame(mode));
+}
 document.getElementById("continue-button").addEventListener("click", () => {
   const saved = loadCampaignSave();
   if (saved) startGame("campaign", saved);
