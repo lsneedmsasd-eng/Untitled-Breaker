@@ -11,19 +11,23 @@ const BRICKS_TOP = 50;
 const MAX_BRICKS = 250;
 const MAX_LASER_BLOCKS = 2;
 const LEVEL_SCROLL_DIRECTIONS = ["left", "right", "up", "down"];
-const SCROLL_LEVEL_INTERVAL = 5;
-let levelScrollDirection = "left";
+const SCROLL_LEVEL_CHANCE = 0.35;
+let levelScrollDirection = null;
 
-function shouldScrollLevel(currentWave) {
-  return currentWave % SCROLL_LEVEL_INTERVAL === 0;
+function shouldScrollLevel() {
+  return Math.random() < SCROLL_LEVEL_CHANCE;
 }
 
 function prepareLevelScroll(layout, currentWave) {
-  if (!shouldScrollLevel(currentWave)) return;
-  levelScrollDirection = LEVEL_SCROLL_DIRECTIONS[(currentWave / SCROLL_LEVEL_INTERVAL - 1) % LEVEL_SCROLL_DIRECTIONS.length];
   for (const brick of layout) {
     brick.scrollHomeX = brick.x;
     brick.scrollHomeY = brick.y;
+  }
+  levelScrollDirection = shouldScrollLevel(currentWave)
+    ? LEVEL_SCROLL_DIRECTIONS[Math.floor(Math.random() * LEVEL_SCROLL_DIRECTIONS.length)]
+    : null;
+  if (!levelScrollDirection) return;
+  for (const brick of layout) {
     if (levelScrollDirection === "left") brick.x -= WIDTH + brick.width;
     if (levelScrollDirection === "right") brick.x += WIDTH + brick.width;
     if (levelScrollDirection === "up") brick.y -= HEIGHT + brick.height;
