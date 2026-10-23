@@ -10,6 +10,35 @@ const BRICK_ROW_GAP = 4;
 const BRICKS_TOP = 50;
 const MAX_BRICKS = 250;
 const MAX_LASER_BLOCKS = 2;
+const LEVEL_SCROLL_DIRECTIONS = ["left", "right", "up", "down"];
+const SCROLL_LEVEL_INTERVAL = 5;
+let levelScrollDirection = "left";
+
+function shouldScrollLevel(currentWave) {
+  return currentWave % SCROLL_LEVEL_INTERVAL === 0;
+}
+
+function prepareLevelScroll(layout, currentWave) {
+  if (!shouldScrollLevel(currentWave)) return;
+  levelScrollDirection = LEVEL_SCROLL_DIRECTIONS[(currentWave / SCROLL_LEVEL_INTERVAL - 1) % LEVEL_SCROLL_DIRECTIONS.length];
+  for (const brick of layout) {
+    brick.scrollHomeX = brick.x;
+    brick.scrollHomeY = brick.y;
+    if (levelScrollDirection === "left") brick.x -= WIDTH + brick.width;
+    if (levelScrollDirection === "right") brick.x += WIDTH + brick.width;
+    if (levelScrollDirection === "up") brick.y -= HEIGHT + brick.height;
+    if (levelScrollDirection === "down") brick.y += HEIGHT + brick.height;
+  }
+}
+
+function updateLevelScroll() {
+  for (const brick of bricks) {
+    brick.x += (brick.scrollHomeX - brick.x) * 0.08;
+    brick.y += (brick.scrollHomeY - brick.y) * 0.08;
+    if (Math.abs(brick.scrollHomeX - brick.x) < 0.1) brick.x = brick.scrollHomeX;
+    if (Math.abs(brick.scrollHomeY - brick.y) < 0.1) brick.y = brick.scrollHomeY;
+  }
+}
 
 function shuffle(items) {
   for (let index = items.length - 1; index > 0; index--) {
@@ -68,9 +97,11 @@ function makeBricks(currentWave) {
     const col = index % brickColumns;
     const roll = Math.random();
     let type = "normal";
-    if (roll < 0.04) {
+    if (roll < 0.025 && currentWave >= 3) {
+      type = "prism";
+    } else if (roll < 0.065) {
       type = "heart";
-    } else if (roll < 0.08) {
+    } else if (roll < 0.105) {
       type = "grow";
     } else if (roll < 0.12) {
       type = "jackpot";
@@ -102,13 +133,14 @@ function makeBricks(currentWave) {
     });
   }
 
+  prepareLevelScroll(list, currentWave);
   return list;
 }
 
 function drawBricks() {
   const colors = ["#ff765e", "#ffb454", "#f3d56c", "#71d4bd"];
   for (const brick of bricks) {
-    const color = brick.type === "heart"
+    let color = brick.type === "heart"
       ? "#f05b78"
       : brick.type === "grow"
         ? "#55cbb2"
@@ -127,9 +159,17 @@ function drawBricks() {
           : brick.type === "projectile"
             ? "#65d5e8"
             : colors[brick.row % colors.length];
-    const gradient = ctx.createLinearGradient(brick.x, brick.y, brick.x, brick.y + brick.height);
-    gradient.addColorStop(0, color);
-    gradient.addColorStop(1, "#263b4a");
+    const gradient = ctx.createLinearGradient(brick.x, brick.y, brick.x + brick.width, brick.y + brick.height);
+    if (brick.type === "prism") {
+      const phase = (performance.now() / 700 + brick.row) % 6;
+      const hueColors = ["#ff5c8a", "#ff9f43", "#f7df4a", "#55d6a9", "#5cb8ff", "#ad7cff"];
+      gradient.addColorStop(0, hueColors[Math.floor(phase) % hueColors.length]);
+      gradient.addColorStop(0.5, hueColors[(Math.floor(phase) + 2) % hueColors.length]);
+      gradient.addColorStop(1, hueColors[(Math.floor(phase) + 4) % hueColors.length]);
+    } else {
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(1, "#263b4a");
+    }
     ctx.fillStyle = gradient;
     fillRoundedRect(brick.x, brick.y, brick.width, brick.height, 3);
     ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
@@ -143,6 +183,14 @@ function drawBricks() {
       ctx.beginPath();
       ctx.arc(brick.x + brick.width / 2, brick.y + brick.height / 2, 3, 0, Math.PI * 2);
       ctx.fill();
+    } else if (brick.type === "prism") {
+      ctx.save();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 13px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("✦", brick.x + brick.width / 2, brick.y + brick.height / 2);
+      ctx.restore();
     } else if (["heart", "grow", "slow", "giant", "jackpot", "bomb", "poison"].includes(brick.type)) {
       ctx.save();
       ctx.fillStyle = "#ffffff";

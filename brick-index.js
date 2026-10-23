@@ -8,11 +8,12 @@ const brickIconStyles = {
   slow: { color: "#789be8", symbol: "SLOW" },
   jackpot: { color: "#f3d45b", symbol: "+100" },
   bomb: { color: "#fa6658", symbol: "✹" },
+  prism: { color: "#ad7cff", symbol: "✦", rainbow: true },
   projectile: { color: "#65d5e8", projectile: true },
   shooter: { color: "#f05b70", shooter: true }
 };
 
-function makeBrickIcon({ color, symbol, armor, projectile, shooter }) {
+function makeBrickIcon({ color, symbol, armor, projectile, shooter, rainbow }) {
   const x = symbol === "4" ? 2 : 8;
   const y = symbol === "4" ? 3 : 7;
   const width = 96 - x * 2;
@@ -26,7 +27,10 @@ function makeBrickIcon({ color, symbol, armor, projectile, shooter }) {
         : symbol
           ? `<text x="48" y="22" fill="#ffffff" font-family="sans-serif" font-size="${symbol === "SLOW" ? 9 : 15}" text-anchor="middle" dominant-baseline="middle">${symbol}</text>`
           : "";
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="40" viewBox="0 0 96 40"><defs><linearGradient id="brick" x1="0" y1="0" x2="0" y2="1"><stop stop-color="${color}"/><stop offset="1" stop-color="#263b4a"/></linearGradient></defs><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="5" fill="url(#brick)"/><rect x="${x + 4}" y="${y + 3}" width="${width - 8}" height="3" rx="1" fill="#ffffff" fill-opacity=".28"/>${feature}</svg>`;
+  const brickFill = rainbow
+    ? '<linearGradient id="brick" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#ff5c8a"/><stop offset="0.2" stop-color="#ffb454"/><stop offset="0.4" stop-color="#f7df4a"/><stop offset="0.6" stop-color="#55d6a9"/><stop offset="0.8" stop-color="#5cb8ff"/><stop offset="1" stop-color="#ad7cff"/></linearGradient>'
+    : `<linearGradient id="brick" x1="0" y1="0" x2="0" y2="1"><stop stop-color="${color}"/><stop offset="1" stop-color="#263b4a"/></linearGradient>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="40" viewBox="0 0 96 40"><defs>${brickFill}</defs><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="5" fill="url(#brick)"/><rect x="${x + 4}" y="${y + 3}" width="${width - 8}" height="3" rx="1" fill="#ffffff" fill-opacity=".28"/>${feature}</svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 

@@ -60,8 +60,24 @@ function bounceOffPaddle() {
   }
 }
 
+function activatePrismSweep(brick) {
+  const sweptBricks = bricks.filter((fieldBrick) => fieldBrick !== brick && fieldBrick.row === brick.row);
+  for (const fieldBrick of sweptBricks) {
+    clearActiveAimForDestroyedTarget(fieldBrick);
+    spawnBrickParticles(fieldBrick);
+    addBrickScore();
+    const index = bricks.indexOf(fieldBrick);
+    if (index >= 0) bricks.splice(index, 1);
+  }
+  activatePaddleGrow();
+  showGamePopup("PRISM WAVE!", "power");
+  playSound("jackpot");
+}
+
 function applyBrickReward(brick) {
-  if (brick.type === "heart") {
+  if (brick.type === "prism") {
+    activatePrismSweep(brick);
+  } else if (brick.type === "heart") {
     grantHeart();
   } else if (brick.type === "grow") {
     activatePaddleGrow();
@@ -156,6 +172,8 @@ function bounceOffBricks() {
     } else {
       const sound = brick.type === "bomb" || brick.type === "jackpot"
         ? brick.type
+        : brick.type === "prism"
+          ? "jackpot"
         : brick.type === "giant" || brick.type === "heart" || brick.type === "grow" || brick.type === "slow"
           ? brick.type
           : "brick";

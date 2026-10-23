@@ -676,6 +676,7 @@ function frame(now) {
     leftover = 250;
   }
 
+  updateLevelScroll();
   while (leftover >= STEP) {
     update();
     leftover = leftover - STEP;
@@ -806,8 +807,10 @@ function startGame(mode = "campaign", saved = null) {
     ball.vy = saved.ball.vy;
     paddle.x = saved.paddle.x;
     paddle.width = saved.paddle.width;
-    selectedTarget = bricks[saved.selectedTargetIndex] || null;
-    aimCooldown = Math.min(saved.aimCooldown || 0, AIM_TARGET_DESTROYED_COOLDOWN);
+    selectedTarget = bricks[saved.selectedTargetIndex] || null;      for (const brick of bricks) {
+        brick.scrollHomeX = brick.x;
+        brick.scrollHomeY = brick.y;
+      }    aimCooldown = Math.min(saved.aimCooldown || 0, AIM_TARGET_DESTROYED_COOLDOWN);
     paddleGrowTimer = saved.paddleGrowTimer || 0;
     paddleShrinkTimer = saved.paddleShrinkTimer || 0;
     paddleSlowTimer = saved.paddleSlowTimer || 0;
