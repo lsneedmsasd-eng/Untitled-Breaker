@@ -39,16 +39,14 @@ function bounceOffWalls() {
 // ball.vy > 0 means "the ball is moving down", so it only bounces
 // when it is falling onto the paddle.
 function bounceOffPaddle() {
-  const hitPaddle = getActivePaddles().find((playerPaddle) => boxesTouch(ball, playerPaddle));
-  if (!hitPaddle || ball.vy <= 0) {
+  if (!boxesTouch(ball, paddle) || ball.vy <= 0) {
     return;
   }
-  if (coOpGame.active) paddle.x = hitPaddle.x;
   playSound("paddle");
-  ball.y = hitPaddle.y - ball.height;  // sit on top of the paddle
+  ball.y = paddle.y - ball.height;  // sit on top of the paddle
   const targetIsNearby = selectedTarget &&
     bricks.includes(selectedTarget) &&
-    Math.abs(selectedTarget.x + selectedTarget.width / 2 - (hitPaddle.x + hitPaddle.width / 2)) <= AIM_RANGE;
+    Math.abs(selectedTarget.x + selectedTarget.width / 2 - (paddle.x + paddle.width / 2)) <= AIM_RANGE;
 
   if (targetIsNearby) {
     const deltaX = selectedTarget.x + selectedTarget.width / 2 - (ball.x + ball.width / 2);

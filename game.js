@@ -132,10 +132,6 @@ function fillRoundedRect(x, y, width, height, radius) {
 }
 
 function launchBall() {
-  if (coOpGame.active && !coOpGame.isHost) {
-    if (typeof requestCoOpLaunch === "function") requestCoOpLaunch();
-    return;
-  }
   if (gameState !== "ready") {
     return;
   }
@@ -157,159 +153,6 @@ const paddle = {
   height: 12,
   speed: 8
 };
-const COOP_PADDLE_COLORS = ["#67e8d0", "#ffb454", "#75b8ff", "#ff7b88", "#c1db64", "#d29aff", "#67d2e8", "#ffa76f"];
-let coOpGame = { active: false, isHost: false, localId: null, hostId: null, players: [] };
-let lastCoOpSnapshot = 0;
-let lastCoOpInput = 0;
-
-function getActivePaddles() {
-  return coOpGame.active ? coOpGame.players : [paddle];
-}
-
-function resetCoOpPaddles() {
-  if (!coOpGame.active) return;
-  const spacing = Math.max(1, coOpGame.players.length - 1);
-  coOpGame.players.forEach((player, index) => {
-    player.width = paddle.width;
-    player.x = index * (WIDTH - player.width) / spacing;
-  });
-  const localPlayer = coOpGame.players.find((player) => player.id === coOpGame.localId);
-  if (localPlayer) paddle.x = localPlayer.x;
-  positionBallOnPaddle();
-}
-
-function enableCoOpGame({ localId, hostId, players }) {
-  coOpGame = {
-    active: true,
-    isHost: localId === hostId,
-    localId,
-    hostId,
-    players: players.map((player, index) => ({
-      id: player.id,
-      username: player.username,
-      x: index * (WIDTH - paddle.width) / Math.max(1, players.length - 1),
-      y: paddle.y,
-      width: paddle.width,
-      height: paddle.height,
-      color: COOP_PADDLE_COLORS[index % COOP_PADDLE_COLORS.length]
-    }))
-  };
-  resetCoOpPaddles();
-  syncCoOpControls();
-}
-
-function syncCoOpPlayers(players) {
-  if (!coOpGame.active) return;
-  const previous = new Map(coOpGame.players.map((player) => [player.id, player]));
-  coOpGame.players = players.map((player, index) => {
-    const existing = previous.get(player.id);
-    return {
-      id: player.id,
-      username: player.username,
-      x: existing?.x ?? index * (WIDTH - paddle.width) / Math.max(1, players.length - 1),
-      y: paddle.y,
-      width: existing?.width ?? paddle.width,
-      height: paddle.height,
-      color: existing?.color ?? COOP_PADDLE_COLORS[index % COOP_PADDLE_COLORS.length]
-    };
-  });
-  const localPlayer = coOpGame.players.find((player) => player.id === coOpGame.localId);
-  if (localPlayer) paddle.x = localPlayer.x;
-}
-
-function updateCoOpPlayerInput(playerId, x) {
-  if (!coOpGame.active || !coOpGame.isHost) return;
-  const player = coOpGame.players.find((entry) => entry.id === playerId);
-  if (player && Number.isFinite(x)) {
-    player.x = Math.max(0, Math.min(WIDTH - player.width, x));
-  }
-}
-
-function applyCoOpSnapshot(state) {
-  if (!coOpGame.active || coOpGame.isHost || !state) return;
-  Object.assign(ball, state.ball);
-  Object.assign(paddle, state.paddle);
-  const receivedPlayers = new Map(state.players.map((player) => [player.id, player]));
-  coOpGame.players.forEach((player) => {
-    const received = receivedPlayers.get(player.id);
-    if (!received) return;
-    player.targetX = received.x;
-    if (player.id !== coOpGame.localId && !Number.isFinite(player.x)) player.x = received.x;
-  });
-  state.players.forEach((received) => {
-    if (!coOpGame.players.some((player) => player.id === received.id)) coOpGame.players.push(received);
-  });
-  bricks = state.bricks;
-  score = state.score;
-  wave = state.wave;
-  lives = state.lives;
-  ballSpeed = state.ballSpeed;
-  aimCooldown = state.aimCooldown;
-  paddleGrowTimer = state.paddleGrowTimer;
-  paddleShrinkTimer = state.paddleShrinkTimer;
-  paddleSlowTimer = state.paddleSlowTimer;
-  ballSlowTimer = state.ballSlowTimer;
-  projectiles = state.projectiles;
-  beamCooldown = state.beamCooldown;
-  gamestate.restoreCombo(state.combo);
-  selectedTarget = bricks[state.selectedTargetIndex] || null;
-  passiveAimTarget = null;
-  if (state.brickBeam) {
-    const { sourceIndex, ...beamState } = state.brickBeam;
-    brickBeam = { ...beamState, source: bricks[sourceIndex] || null };
-  } else {
-    brickBeam = null;
-  }
-  if (state.gameState !== gameState) showScreen(state.gameState);
-  if (state.gameState === "gameover") {
-    document.getElementById("final-score").textContent = `Final score: ${score}`;
-  }
-  if (state.gameState === "victory") {
-    document.getElementById("victory-score").textContent = `Final score: ${score}`;
-  }
-}
-
-function buildCoOpSnapshot() {
-  const beamState = brickBeam
-    ? { ...brickBeam, sourceIndex: bricks.indexOf(brickBeam.source), source: undefined }
-    : null;
-  return {
-    ball: { ...ball },
-    paddle: { x: paddle.x, y: paddle.y, width: paddle.width, height: paddle.height },
-    players: coOpGame.players.map((player) => ({ ...player })),
-    bricks: bricks.map((brick) => ({ ...brick })),
-    score,
-    wave,
-    lives,
-    ballSpeed,
-    gameState,
-    combo: gamestate.combo,
-    aimCooldown,
-    selectedTargetIndex: bricks.indexOf(selectedTarget),
-    paddleGrowTimer,
-    paddleShrinkTimer,
-    paddleSlowTimer,
-    ballSlowTimer,
-    projectiles: projectiles.map((projectile) => ({ ...projectile })),
-    brickBeam: beamState,
-    beamCooldown
-  };
-}
-
-function syncCoOpControls() {
-  const canControl = !coOpGame.active || coOpGame.isHost;
-  document.getElementById("pause-button").disabled = !canControl;
-  document.getElementById("leave-coop-button").hidden = !coOpGame.active;
-  document.getElementById("launch-button").textContent = canControl ? "Launch" : "Team launch";
-}
-
-function endCoOpGame() {
-  if (!coOpGame.active) return;
-  coOpGame = { active: false, isHost: false, localId: null, hostId: null, players: [] };
-  syncCoOpControls();
-  if (typeof leaveCoOpSession === "function") leaveCoOpSession();
-}
-
 const AIM_RANGE = 260;
 const AIM_SWITCH_COOLDOWN = 5000;
 const AIM_TARGET_DESTROYED_COOLDOWN = 15000;
@@ -352,13 +195,13 @@ const keys = {};
 document.addEventListener("keydown", function (event) {
   const key = event.key.toLowerCase();
   keys[key] = true;
-  if ((key === "escape" || key === "p") && gameState === "playing" && (!coOpGame.active || coOpGame.isHost)) {
+  if ((key === "escape" || key === "p") && gameState === "playing") {
     pausedState = gameState;
     showScreen("paused");
-  } else if ((key === "escape" || key === "p") && gameState === "ready" && (!coOpGame.active || coOpGame.isHost)) {
+  } else if ((key === "escape" || key === "p") && gameState === "ready") {
     pausedState = gameState;
     showScreen("paused");
-  } else if ((key === "escape" || key === "p") && gameState === "paused" && (!coOpGame.active || coOpGame.isHost)) {
+  } else if ((key === "escape" || key === "p") && gameState === "paused") {
     showScreen(pausedState);
   } else if (key === " " && gameState === "ready") {
     launchBall();
@@ -383,29 +226,6 @@ function getCanvasPoint(event) {
     y: (event.clientY - bounds.top) * HEIGHT / bounds.height
   };
 }
-
-function setCoOpLocalPaddleX(x) {
-  if (!coOpGame.active) return;
-  const player = coOpGame.players.find((entry) => entry.id === coOpGame.localId);
-  if (!player) return;
-  const nextX = Math.max(0, Math.min(WIDTH - player.width, x));
-  if (nextX === player.x) return;
-  player.x = nextX;
-  paddle.x = nextX;
-  const now = performance.now();
-  if (!coOpGame.isHost && now - lastCoOpInput >= 30 && typeof sendCoOpInput === "function") {
-    sendCoOpInput(nextX);
-    lastCoOpInput = now;
-  }
-}
-
-canvas.addEventListener("pointermove", (event) => {
-  if (coOpGame.active && event.pointerType === "touch") {
-    const point = getCanvasPoint(event);
-    const player = coOpGame.players.find((entry) => entry.id === coOpGame.localId);
-    if (player) setCoOpLocalPaddleX(point.x - player.width / 2);
-  }
-});
 
 function changeActiveAim(target) {
   if (target === selectedTarget || aimCooldown > 0) {
@@ -450,10 +270,6 @@ canvas.addEventListener("click", function (event) {
 // what they touched.
 // ------------------------------------------------------------
 function update() {
-  if (coOpGame.active && !coOpGame.isHost) {
-    moveLocalCoOpPaddle();
-    return;
-  }
   if (gameState === "ready") {
     movePaddle();
     positionBallOnPaddle();
@@ -522,17 +338,6 @@ function activatePaddleGrow() {
 }
 
 function setPaddleWidth(width) {
-  if (coOpGame.active) {
-    for (const player of coOpGame.players) {
-      const center = player.x + player.width / 2;
-      player.width = width;
-      player.x = Math.max(0, Math.min(WIDTH - width, center - width / 2));
-    }
-    const localPlayer = coOpGame.players.find((player) => player.id === coOpGame.localId);
-    if (localPlayer) paddle.x = localPlayer.x;
-    paddle.width = width;
-    return;
-  }
   const center = paddle.x + paddle.width / 2;
   paddle.width = width;
   paddle.x = Math.max(0, Math.min(WIDTH - paddle.width, center - paddle.width / 2));
@@ -670,37 +475,8 @@ function drawParticles() {
   ctx.globalAlpha = 1;
 }
 
-function drawCoOpPaddles() {
-  for (const player of coOpGame.players) {
-    ctx.fillStyle = player.color;
-    fillRoundedRect(player.x, player.y, player.width, player.height, 6);
-    ctx.fillStyle = player.color;
-    ctx.font = "bold 11px Trebuchet MS, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(player.username, player.x + player.width / 2, player.y - 7);
-    if (player.id === coOpGame.localId) {
-      ctx.strokeStyle = "#fff4c2";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(player.x - 2, player.y - 2, player.width + 4, player.height + 4);
-    }
-  }
-  ctx.textAlign = "left";
-}
-
 function movePaddle() {
   const movementSpeed = paddle.speed * (paddleSlowTimer > 0 ? PADDLE_SLOW_FACTOR : 1);
-  if (coOpGame.active && coOpGame.isHost) {
-    for (const player of coOpGame.players) {
-      if (player.id === coOpGame.localId) {
-        if (keys["arrowleft"] || keys["a"]) player.x -= movementSpeed;
-        if (keys["arrowright"] || keys["d"]) player.x += movementSpeed;
-      }
-      player.x = Math.max(0, Math.min(WIDTH - player.width, player.x));
-    }
-    const hostPaddle = coOpGame.players.find((player) => player.id === coOpGame.hostId);
-    if (hostPaddle) paddle.x = hostPaddle.x;
-    return;
-  }
   if (keys["arrowleft"] || keys["a"]) {
     paddle.x = paddle.x - movementSpeed;
   }
@@ -714,22 +490,6 @@ function movePaddle() {
   }
   if (paddle.x + paddle.width > WIDTH) {
     paddle.x = WIDTH - paddle.width;
-  }
-}
-
-function moveLocalCoOpPaddle() {
-  const player = coOpGame.players.find((entry) => entry.id === coOpGame.localId);
-  if (!player) return;
-  const movementSpeed = paddle.speed * (paddleSlowTimer > 0 ? PADDLE_SLOW_FACTOR : 1);
-  const previousX = player.x;
-  if (keys["arrowleft"] || keys["a"]) player.x -= movementSpeed;
-  if (keys["arrowright"] || keys["d"]) player.x += movementSpeed;
-  player.x = Math.max(0, Math.min(WIDTH - player.width, player.x));
-  paddle.x = player.x;
-  const now = performance.now();
-  if (player.x !== previousX && now - lastCoOpInput >= 30 && typeof sendCoOpInput === "function") {
-    sendCoOpInput(player.x);
-    lastCoOpInput = now;
   }
 }
 
@@ -836,15 +596,11 @@ function draw() {
     ctx.strokeRect(selectedTarget.x - 2, selectedTarget.y - 2, selectedTarget.width + 4, selectedTarget.height + 4);
   }
 
-  if (coOpGame.active) {
-    drawCoOpPaddles();
-  } else {
-    const paddleGradient = ctx.createLinearGradient(paddle.x, paddle.y, paddle.x, paddle.y + paddle.height);
-    paddleGradient.addColorStop(0, "#a5f3e7");
-    paddleGradient.addColorStop(1, "#36b7ad");
-    ctx.fillStyle = paddleGradient;
-    fillRoundedRect(paddle.x, paddle.y, paddle.width, paddle.height, 6);
-  }
+  const paddleGradient = ctx.createLinearGradient(paddle.x, paddle.y, paddle.x, paddle.y + paddle.height);
+  paddleGradient.addColorStop(0, "#a5f3e7");
+  paddleGradient.addColorStop(1, "#36b7ad");
+  ctx.fillStyle = paddleGradient;
+  fillRoundedRect(paddle.x, paddle.y, paddle.width, paddle.height, 6);
 
   ctx.fillStyle = "#fff4c2";
   ctx.shadowColor = "#ffcc66";
@@ -871,11 +627,7 @@ function startNextWave() {
   projectiles = [];
   selectedTarget = null;
   beamCooldown = Math.max(900, 1800 - (wave - 1) * 60);
-  if (coOpGame.active) {
-    resetCoOpPaddles();
-  } else {
-    paddle.x = WIDTH / 2 - paddle.width / 2;
-  }
+  paddle.x = WIDTH / 2 - paddle.width / 2;
   resetBall();
   showScreen("ready");
   saveCampaign();
@@ -906,18 +658,6 @@ function frame(now) {
     leftover = leftover - STEP;
   }
 
-  if (coOpGame.active && !coOpGame.isHost) {
-    for (const player of coOpGame.players) {
-      if (player.id === coOpGame.localId || !Number.isFinite(player.targetX)) continue;
-      player.x += (player.targetX - player.x) * 0.35;
-    }
-  }
-
-  if (coOpGame.active && coOpGame.isHost && now - lastCoOpSnapshot >= 33 && typeof sendCoOpState === "function") {
-    sendCoOpState(buildCoOpSnapshot());
-    lastCoOpSnapshot = now;
-  }
-
   if (gameMode === "campaign" && now - lastCampaignSave >= 1000) {
     saveCampaign();
     lastCampaignSave = now;
@@ -930,7 +670,7 @@ function frame(now) {
 function showScreen(state) {
   gameState = state;
   const screen = state === "paused" ? "pause" : state;
-  for (const name of ["menu", "lobby", "brick-index", "ready", "settings", "pause", "gameover", "victory"]) {
+  for (const name of ["menu", "brick-index", "ready", "settings", "pause", "gameover", "victory"]) {
     document.getElementById(`screen-${name}`).hidden = name !== screen;
   }
 }
@@ -1021,10 +761,6 @@ function clearCampaignSave() {
 }
 
 function startGame(mode = "campaign", saved = null) {
-  if (coOpGame.active && !coOpGame.isHost) {
-    if (typeof requestCoOpRestart === "function") requestCoOpRestart(mode);
-    return;
-  }
   initializeAudio();
   gameMode = mode;
   if (mode === "campaign" && saved) {
@@ -1075,7 +811,6 @@ function startGame(mode = "campaign", saved = null) {
     paddle.x = WIDTH / 2 - paddle.width / 2;
     resetBall();
   }
-  if (coOpGame.active) resetCoOpPaddles();
   particles = [];
   lastTime = performance.now();
   showScreen(saved && mode === "campaign" && saved.resumeState === "playing" ? "playing" : "ready");
@@ -1095,15 +830,10 @@ document.getElementById("restart-button").addEventListener("click", () => startG
 document.getElementById("launch-button").addEventListener("click", launchBall);
 document.getElementById("resume-button").addEventListener("click", () => showScreen(pausedState));
 document.getElementById("pause-button").addEventListener("click", () => {
-  if (coOpGame.active && !coOpGame.isHost) return;
   if (gameState === "playing" || gameState === "ready") {
     pausedState = gameState;
     showScreen("paused");
   }
-});
-document.getElementById("leave-coop-button").addEventListener("click", () => {
-  endCoOpGame();
-  showScreen("menu");
 });
 document.getElementById("open-settings").addEventListener("click", () => {
   settingsReturnState = "menu";
@@ -1116,16 +846,13 @@ document.getElementById("pause-settings").addEventListener("click", () => {
 document.getElementById("settings-back").addEventListener("click", () => showScreen(settingsReturnState));
 document.getElementById("menu-button").addEventListener("click", () => {
   saveCampaign();
-  endCoOpGame();
   showScreen("menu");
 });
 document.getElementById("gameover-menu").addEventListener("click", () => {
-  endCoOpGame();
   showScreen("menu");
 });
 document.getElementById("victory-endless").addEventListener("click", () => startGame("endless"));
 document.getElementById("victory-menu").addEventListener("click", () => {
-  endCoOpGame();
   showScreen("menu");
 });
 document.getElementById("effects-toggle").addEventListener("change", (event) => {
