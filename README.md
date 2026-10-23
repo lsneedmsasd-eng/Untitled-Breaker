@@ -9,4 +9,4 @@ npm install
 npm start
 ```
 
-Open port 3000 in your browser. The game runs locally as a single-player campaign or endless mode.
+Open port 3000 in your browser. The game includes a 50-level campaign, endless mode, a 90-second Time Attack with bonuses for cleared waves, and One Life mode with no second chances.

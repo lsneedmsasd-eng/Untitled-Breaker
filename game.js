@@ -23,6 +23,9 @@ const BALL_SPEED = 4;
 const CAMPAIGN_LEVELS = 50;
 const CAMPAIGN_SAVE_KEY = "block-breaker-campaign-v1";
 let gameMode = null;
+let timeAttackRemaining = 0;
+const TIME_ATTACK_DURATION = 90000;
+const TIME_ATTACK_WAVE_BONUS = 10000;
 let lastCampaignSave = 0;
 let speedSetting = 1;
 let ballSpeed = BALL_SPEED * speedSetting;
@@ -279,6 +282,16 @@ function update() {
     return;
   }
 
+  if (gameMode === "time-attack") {
+    timeAttackRemaining = Math.max(0, timeAttackRemaining - STEP);
+    if (timeAttackRemaining === 0) {
+      recordEndlessScore();
+      document.getElementById("final-score").textContent = `Final score: ${score}`;
+      showScreen("gameover");
+      return;
+    }
+  }
+
   aimCooldown = Math.max(0, aimCooldown - STEP);
   updatePaddleSlow(STEP);
   movePaddle();
@@ -312,7 +325,7 @@ function loseLife() {
   if (lives <= 0) {
     if (gameMode === "campaign") {
       clearCampaignSave();
-    } else if (gameMode === "endless") {
+    } else if (["endless", "one-life", "time-attack"].includes(gameMode)) {
       recordEndlessScore();
     }
     document.getElementById("final-score").textContent = `Final score: ${score}`;
@@ -324,7 +337,8 @@ function loseLife() {
 }
 
 function grantHeart() {
-  if (lives < MAX_LIVES) {
+  const lifeLimit = gameMode === "one-life" ? 1 : MAX_LIVES;
+  if (lives < lifeLimit) {
     lives++;
     showGamePopup("EXTRA LIFE!", "power");
   }
@@ -554,7 +568,13 @@ function draw() {
   const comboLabel = gamestate.combo > 1 ? `   COMBO x${gamestate.combo}` : "";
   ctx.fillText(`SCORE  ${score}${comboLabel}`, 18, 25);
   ctx.textAlign = "center";
-  const modeLabel = gameMode === "endless" ? `ENDLESS ${wave}` : `LEVEL ${wave}/${CAMPAIGN_LEVELS}`;
+  const modeLabel = gameMode === "endless"
+    ? `ENDLESS ${wave}`
+    : gameMode === "one-life"
+      ? `ONE LIFE ${wave}`
+      : gameMode === "time-attack"
+        ? `TIME ${Math.ceil(timeAttackRemaining / 1000)}s  WAVE ${wave}`
+        : `LEVEL ${wave}/${CAMPAIGN_LEVELS}`;
   ctx.fillText(modeLabel, WIDTH / 2, 25);
   ctx.textAlign = "right";
   ctx.fillText(`LIVES  ${lives}   BRICKS  ${bricks.length}`, WIDTH - 18, 25);
@@ -627,6 +647,9 @@ function startNextWave() {
   projectiles = [];
   selectedTarget = null;
   beamCooldown = Math.max(900, 1800 - (wave - 1) * 60);
+  if (gameMode === "time-attack") {
+    timeAttackRemaining += TIME_ATTACK_WAVE_BONUS;
+  }
   paddle.x = WIDTH / 2 - paddle.width / 2;
   resetBall();
   showScreen("ready");
@@ -797,7 +820,8 @@ function startGame(mode = "campaign", saved = null) {
     bricks = makeBricks(wave);  // bricks.js
     score = 0;
     gamestate.resetCombo();
-    lives = 3;
+    lives = gameMode === "one-life" ? 1 : 3;
+    timeAttackRemaining = gameMode === "time-attack" ? TIME_ATTACK_DURATION : 0;
     selectedTarget = null;
     aimCooldown = 0;
     paddle.width = PADDLE_BASE_WIDTH;
@@ -822,6 +846,8 @@ function startGame(mode = "campaign", saved = null) {
 let settingsReturnState = "menu";
 document.getElementById("campaign-button").addEventListener("click", () => startGame("campaign"));
 document.getElementById("endless-button").addEventListener("click", () => startGame("endless"));
+document.getElementById("time-attack-button").addEventListener("click", () => startGame("time-attack"));
+document.getElementById("one-life-button").addEventListener("click", () => startGame("one-life"));
 document.getElementById("continue-button").addEventListener("click", () => {
   const saved = loadCampaignSave();
   if (saved) startGame("campaign", saved);
