@@ -653,6 +653,9 @@ function startNextWave() {
   paddle.x = WIDTH / 2 - paddle.width / 2;
   resetBall();
   showScreen("ready");
+  if (gameMode === "time-attack") {
+    launchBall();
+  }
   saveCampaign();
 }
 

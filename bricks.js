@@ -55,12 +55,14 @@ function shuffle(items) {
 function makeBricks(currentWave) {
   const list = [];
   let shooterCount = 0;
-  const brickColumns = gameMode === "time-attack" ? 12 : BRICK_COLUMNS;
+  const brickColumns = gameMode === "time-attack" ? 8 : BRICK_COLUMNS;
   const totalWidth = brickColumns * BRICK_WIDTH + (brickColumns - 1) * BRICK_GAP;
   const left = (WIDTH - totalWidth) / 2;
   const desiredCount = Math.min(MAX_BRICKS, 32 + (currentWave - 1) * 14);
   const maxFullRows = Math.floor(MAX_BRICKS / brickColumns) * brickColumns;
-  const rowCount = Math.min(maxFullRows / brickColumns, Math.ceil(desiredCount / brickColumns));
+  const rowCount = gameMode === "time-attack"
+    ? 3
+    : Math.min(maxFullRows / brickColumns, Math.ceil(desiredCount / brickColumns));
   const giantTarget = currentWave >= 5 ? 3 : currentWave >= 3 ? 2 : 1;
   const cells = Array.from({ length: rowCount * brickColumns }, (_, index) => index);
   const giantAnchors = shuffle(cells.filter((cell) =>
