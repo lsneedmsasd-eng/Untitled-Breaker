@@ -11,7 +11,7 @@ const BRICKS_TOP = 50;
 const MAX_BRICKS = 250;
 const MAX_LASER_BLOCKS = 2;
 const LEVEL_SCROLL_DIRECTIONS = ["left", "right", "up", "down"];
-const SCROLL_LEVEL_CHANCE = 0.35;
+const SCROLL_LEVEL_CHANCE = 0.5;
 let levelScrollDirection = null;
 
 function shouldScrollLevel() {
