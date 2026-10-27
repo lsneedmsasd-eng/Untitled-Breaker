@@ -113,7 +113,7 @@ function makeBricks(currentWave) {
       type = "jackpot";
     } else if (roll < 0.16) {
       type = "slow";
-    } else if (roll < 0.20) {
+    } else if (roll < 0.16 + (gameMode === "time-attack" ? 0.34 : 0.04)) {
       type = "bomb";
     } else if (roll < 0.24) {
       type = "poison";
@@ -140,6 +140,9 @@ function makeBricks(currentWave) {
   }
 
   prepareLevelScroll(list, currentWave);
+  if (levelScrollDirection) {
+    showGamePopup(`SCROLL LEVEL: ${levelScrollDirection.toUpperCase()}`, "warning");
+  }
   return list;
 }
 

@@ -106,8 +106,10 @@ function detonateBomb(source) {
 
     const centerX = bomb.x + bomb.width / 2;
     const centerY = bomb.y + bomb.height / 2;
-    for (let index = 0; index < bricks.length; index++) {
-      const neighbor = bricks[index];
+    for (const neighbor of [...bricks]) {
+      if (!bricks.includes(neighbor)) {
+        continue;
+      }
       const dx = neighbor.x + neighbor.width / 2 - centerX;
       const dy = neighbor.y + neighbor.height / 2 - centerY;
       if (Math.hypot(dx, dy) > 66) {
@@ -119,8 +121,10 @@ function detonateBomb(source) {
         continue;
       }
 
-      bricks.splice(index, 1);
-      index--;
+      const index = bricks.indexOf(neighbor);
+      if (index >= 0) {
+        bricks.splice(index, 1);
+      }
       clearActiveAimForDestroyedTarget(neighbor);
       spawnBrickParticles(neighbor);
       addBrickScore();
