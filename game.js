@@ -195,10 +195,32 @@ function addBrickScore() {
 // ------------------------------------------------------------
 const keys = {};
 
+function rerollFirstLevel() {
+  if (gameState !== "ready" || wave !== 1) {
+    return;
+  }
+  bricks = makeBricks(wave);
+  brickBeam = null;
+  projectiles = [];
+  selectedTarget = null;
+  aimCooldown = 0;
+  paddle.width = PADDLE_BASE_WIDTH;
+  paddleGrowTimer = 0;
+  paddleShrinkTimer = 0;
+  paddleSlowTimer = 0;
+  ballSlowTimer = 0;
+  paddle.x = WIDTH / 2 - paddle.width / 2;
+  resetBall();
+  showGamePopup("LEVEL REROLLED", "wave");
+  saveCampaign();
+}
+
 document.addEventListener("keydown", function (event) {
   const key = event.key.toLowerCase();
   keys[key] = true;
-  if ((key === "escape" || key === "p") && gameState === "playing") {
+  if (key === "r") {
+    rerollFirstLevel();
+  } else if ((key === "escape" || key === "p") && gameState === "playing") {
     pausedState = gameState;
     showScreen("paused");
   } else if ((key === "escape" || key === "p") && gameState === "ready") {
