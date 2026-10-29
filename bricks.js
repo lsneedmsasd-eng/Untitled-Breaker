@@ -3,16 +3,21 @@
 // ============================================================
 
 const BRICK_COLUMNS = 16;
+const SIDE_SCROLL_COLUMNS = BRICK_COLUMNS * 2;
+const SIDE_SCROLL_SPEED = 0.7;
 const BRICK_WIDTH = 48;
 const BRICK_HEIGHT = 18;
 const BRICK_GAP = 6;
 const BRICK_ROW_GAP = 4;
 const BRICKS_TOP = 50;
+const SIDE_SCROLL_ROWS = Math.ceil(HEIGHT * 2 / (BRICK_HEIGHT + BRICK_ROW_GAP));
 const MAX_BRICKS = 250;
 const MAX_LASER_BLOCKS = 2;
+const SIDE_SCROLL_DIRECTIONS = ["left", "right", "up", "down"];
 const LEVEL_SCROLL_DIRECTIONS = ["left", "right", "up", "down"];
 const SCROLL_LEVEL_CHANCE = 0.5;
 let levelScrollDirection = null;
+let sideScrollDirection = "left";
 
 function shouldScrollLevel() {
   return Math.random() < SCROLL_LEVEL_CHANCE;
@@ -22,6 +27,10 @@ function prepareLevelScroll(layout, currentWave) {
   for (const brick of layout) {
     brick.scrollHomeX = brick.x;
     brick.scrollHomeY = brick.y;
+  }
+  if (gameMode === "side-scroll") {
+    levelScrollDirection = null;
+    return;
   }
   levelScrollDirection = shouldScrollLevel(currentWave)
     ? LEVEL_SCROLL_DIRECTIONS[Math.floor(Math.random() * LEVEL_SCROLL_DIRECTIONS.length)]
@@ -36,6 +45,7 @@ function prepareLevelScroll(layout, currentWave) {
 }
 
 function updateLevelScroll() {
+  if (gameMode === "side-scroll") return;
   for (const brick of bricks) {
     brick.x += (brick.scrollHomeX - brick.x) * 0.08;
     brick.y += (brick.scrollHomeY - brick.y) * 0.08;
@@ -55,16 +65,32 @@ function shuffle(items) {
 function makeBricks(currentWave) {
   const list = [];
   let shooterCount = 0;
-  const brickColumns = gameMode === "time-attack" ? 8 : BRICK_COLUMNS;
+  if (gameMode === "side-scroll") {
+    sideScrollDirection = SIDE_SCROLL_DIRECTIONS[Math.floor(Math.random() * SIDE_SCROLL_DIRECTIONS.length)];
+  }
+  const verticalSideScroll = gameMode === "side-scroll" && ["up", "down"].includes(sideScrollDirection);
+  const brickColumns = gameMode === "time-attack"
+    ? 8
+    : gameMode === "side-scroll" && !verticalSideScroll
+      ? SIDE_SCROLL_COLUMNS
+      : BRICK_COLUMNS;
   const totalWidth = brickColumns * BRICK_WIDTH + (brickColumns - 1) * BRICK_GAP;
-  const left = (WIDTH - totalWidth) / 2;
+  const left = gameMode === "side-scroll" && !verticalSideScroll ? 0 : (WIDTH - totalWidth) / 2;
   const desiredCount = Math.min(MAX_BRICKS, 32 + (currentWave - 1) * 14);
   const maxFullRows = Math.floor(MAX_BRICKS / brickColumns) * brickColumns;
   const rowCount = gameMode === "time-attack"
     ? 3
-    : Math.min(maxFullRows / brickColumns, Math.ceil(desiredCount / brickColumns));
+    : verticalSideScroll
+      ? SIDE_SCROLL_ROWS
+    : Math.min(
+      maxFullRows / brickColumns,
+      Math.ceil(desiredCount / (gameMode === "side-scroll" ? BRICK_COLUMNS : brickColumns))
+    );
   const giantTarget = currentWave >= 5 ? 3 : currentWave >= 3 ? 2 : 1;
-  const cells = Array.from({ length: rowCount * brickColumns }, (_, index) => index);
+  const allCells = Array.from({ length: rowCount * brickColumns }, (_, index) => index);
+  const cells = verticalSideScroll
+    ? shuffle(allCells).slice(0, desiredCount).sort((first, second) => first - second)
+    : allCells;
   const giantAnchors = shuffle(cells.filter((cell) =>
     cell % brickColumns < brickColumns - 1 &&
     Math.floor(cell / brickColumns) < rowCount - 1
@@ -143,7 +169,32 @@ function makeBricks(currentWave) {
   if (levelScrollDirection) {
     showGamePopup(`SCROLL LEVEL: ${levelScrollDirection.toUpperCase()}`, "warning");
   }
+  if (gameMode === "side-scroll") {
+    showGamePopup(`SIDE SCROLL: ${sideScrollDirection.toUpperCase()}`, "warning");
+  }
   return list;
+}
+
+function updateSideScroll(deltaTime) {
+  if (gameMode !== "side-scroll") return;
+  const distance = SIDE_SCROLL_SPEED * deltaTime / (1000 / 60);
+  const worldWidth = SIDE_SCROLL_COLUMNS * (BRICK_WIDTH + BRICK_GAP);
+  const worldHeight = SIDE_SCROLL_ROWS * (BRICK_HEIGHT + BRICK_ROW_GAP);
+  for (const brick of bricks) {
+    if (sideScrollDirection === "left") {
+      brick.x -= distance;
+      if (brick.x + brick.width < 0) brick.x += worldWidth;
+    } else if (sideScrollDirection === "right") {
+      brick.x += distance;
+      if (brick.x >= worldWidth) brick.x -= worldWidth;
+    } else if (sideScrollDirection === "up") {
+      brick.y -= distance;
+      if (brick.y + brick.height < BRICKS_TOP) brick.y += worldHeight;
+    } else {
+      brick.y += distance;
+      if (brick.y >= BRICKS_TOP + worldHeight) brick.y -= worldHeight;
+    }
+  }
 }
 
 function drawBricks() {

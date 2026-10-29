@@ -156,6 +156,11 @@ const paddle = {
   height: 12,
   speed: 8
 };
+
+function getActivePaddles() {
+  return [paddle];
+}
+
 const AIM_RANGE = 260;
 const AIM_SWITCH_COOLDOWN = 5000;
 const AIM_TARGET_DESTROYED_COOLDOWN = 15000;
@@ -317,6 +322,7 @@ function update() {
   aimCooldown = Math.max(0, aimCooldown - STEP);
   updatePaddleSlow(STEP);
   movePaddle();
+  updateSideScroll(STEP);
   updatePaddleGrow(STEP);
   updateBallSlow(STEP);
   updatePaddleShrink(STEP);
@@ -347,7 +353,7 @@ function loseLife() {
   if (lives <= 0) {
     if (gameMode === "campaign") {
       clearCampaignSave();
-    } else if (["endless", "one-life", "time-attack"].includes(gameMode)) {
+    } else if (["endless", "one-life", "time-attack", "side-scroll"].includes(gameMode)) {
       recordEndlessScore();
     }
     document.getElementById("final-score").textContent = `Final score: ${score}`;
@@ -596,6 +602,8 @@ function draw() {
       ? `ONE LIFE ${wave}`
       : gameMode === "time-attack"
         ? `RUSH ${Math.ceil(timeAttackRemaining / 1000)}s  WAVE ${wave}`
+        : gameMode === "side-scroll"
+          ? `SIDE SCROLL ${sideScrollDirection.toUpperCase()} ${wave}`
         : `LEVEL ${wave}/${CAMPAIGN_LEVELS}`;
   ctx.fillText(modeLabel, WIDTH / 2, 25);
   ctx.textAlign = "right";
@@ -732,7 +740,7 @@ function renderEndlessLeaderboard() {
     list.replaceChildren();
     if (entries.length === 0) {
       const emptyMessage = document.createElement("li");
-      emptyMessage.textContent = "No endless runs yet.";
+      emptyMessage.textContent = "No arcade runs yet.";
       list.append(emptyMessage);
       continue;
     }
@@ -810,7 +818,7 @@ function clearCampaignSave() {
 }
 
 function startGame(mode = "campaign", saved = null) {
-  const supportedModes = ["campaign", "endless", "time-attack", "one-life"];
+  const supportedModes = ["campaign", "endless", "time-attack", "one-life", "side-scroll"];
   if (!supportedModes.includes(mode)) {
     console.error(`Unknown game mode: ${mode}`);
     return;
@@ -882,7 +890,8 @@ const modeButtons = [
   ["campaign-button", "campaign"],
   ["endless-button", "endless"],
   ["time-attack-button", "time-attack"],
-  ["one-life-button", "one-life"]
+  ["one-life-button", "one-life"],
+  ["side-scroll-button", "side-scroll"]
 ];
 for (const [buttonId, mode] of modeButtons) {
   document.getElementById(buttonId).addEventListener("click", () => startGame(mode));
