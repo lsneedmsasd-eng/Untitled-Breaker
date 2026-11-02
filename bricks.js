@@ -4,7 +4,7 @@
 
 const BRICK_COLUMNS = 16;
 const SIDE_SCROLL_COLUMNS = BRICK_COLUMNS * 2;
-const SIDE_SCROLL_SPEED = 0.7;
+let sideScrollSpeed = 0.7;
 const BRICK_WIDTH = 48;
 const BRICK_HEIGHT = 18;
 const BRICK_GAP = 6;
@@ -62,11 +62,12 @@ function shuffle(items) {
   return items;
 }
 
-function makeBricks(currentWave) {
+function makeBricks(currentWave, forcedSideScrollDirection = null) {
   const list = [];
   let shooterCount = 0;
   if (gameMode === "side-scroll") {
-    sideScrollDirection = SIDE_SCROLL_DIRECTIONS[Math.floor(Math.random() * SIDE_SCROLL_DIRECTIONS.length)];
+    sideScrollDirection = forcedSideScrollDirection ||
+      SIDE_SCROLL_DIRECTIONS[Math.floor(Math.random() * SIDE_SCROLL_DIRECTIONS.length)];
   }
   const verticalSideScroll = gameMode === "side-scroll" && ["up", "down"].includes(sideScrollDirection);
   const brickColumns = gameMode === "time-attack"
@@ -177,7 +178,7 @@ function makeBricks(currentWave) {
 
 function updateSideScroll(deltaTime) {
   if (gameMode !== "side-scroll") return;
-  const distance = SIDE_SCROLL_SPEED * deltaTime / (1000 / 60);
+  const distance = sideScrollSpeed * deltaTime / (1000 / 60);
   const worldWidth = SIDE_SCROLL_COLUMNS * (BRICK_WIDTH + BRICK_GAP);
   const worldHeight = SIDE_SCROLL_ROWS * (BRICK_HEIGHT + BRICK_ROW_GAP);
   for (const brick of bricks) {
@@ -291,7 +292,8 @@ function spawnBrickProjectiles(brick) {
 function updateBrickWeapons(deltaTime) {
   updateBrickProjectiles(deltaTime);
 
-  if (wave < 10) {
+  const hasAdminSpawnedShooter = bricks.some((brick) => brick.type === "shooter" && brick.adminSpawned);
+  if (wave < 10 && !hasAdminSpawnedShooter) {
     brickBeam = null;
     return;
   }

@@ -727,7 +727,7 @@ function frame(now) {
 function showScreen(state) {
   gameState = state;
   const screen = state === "paused" ? "pause" : state;
-  for (const name of ["menu", "brick-index", "ready", "settings", "pause", "gameover", "victory"]) {
+  for (const name of ["menu", "brick-index", "ready", "settings", "admin", "pause", "gameover", "victory"]) {
     document.getElementById(`screen-${name}`).hidden = name !== screen;
   }
 }
@@ -817,7 +817,7 @@ function clearCampaignSave() {
   }
 }
 
-function startGame(mode = "campaign", saved = null) {
+function startGame(mode = "campaign", saved = null, forcedSideScrollDirection = null) {
   const supportedModes = ["campaign", "endless", "time-attack", "one-life", "side-scroll"];
   if (!supportedModes.includes(mode)) {
     console.error(`Unknown game mode: ${mode}`);
@@ -859,7 +859,7 @@ function startGame(mode = "campaign", saved = null) {
   } else {
     wave = 1;
     ballSpeed = BALL_SPEED * speedSetting;
-    bricks = makeBricks(wave);  // bricks.js
+    bricks = makeBricks(wave, forcedSideScrollDirection);  // bricks.js
     score = 0;
     gamestate.resetCombo();
     lives = gameMode === "one-life" ? 1 : 3;
@@ -896,6 +896,64 @@ const modeButtons = [
 for (const [buttonId, mode] of modeButtons) {
   document.getElementById(buttonId).addEventListener("click", () => startGame(mode));
 }
+let adminSelectedDirection = "left";
+for (const button of document.querySelectorAll("[data-admin-direction]")) {
+  button.addEventListener("click", () => {
+    adminSelectedDirection = button.dataset.adminDirection;
+    for (const directionButton of document.querySelectorAll("[data-admin-direction]")) {
+      directionButton.setAttribute("aria-pressed", String(directionButton === button));
+    }
+  });
+}
+document.getElementById("admin-scroll-speed").addEventListener("input", (event) => {
+  sideScrollSpeed = Number(event.target.value);
+});
+document.getElementById("open-admin-panel").addEventListener("click", () => showScreen("admin"));
+document.getElementById("admin-start-scroll").addEventListener("click", () => {
+  startGame("side-scroll", null, adminSelectedDirection);
+});
+document.getElementById("admin-spawn-block").addEventListener("click", () => {
+  if (gameMode !== "side-scroll") startGame("side-scroll", null, adminSelectedDirection);
+  const type = document.getElementById("admin-block-type").value;
+  const isGiant = type === "giant";
+  const width = isGiant ? BRICK_WIDTH * 2 + BRICK_GAP : BRICK_WIDTH;
+  const height = isGiant ? BRICK_HEIGHT * 2 + BRICK_ROW_GAP : BRICK_HEIGHT;
+  let position = null;
+  for (let y = BRICKS_TOP; y <= HEIGHT - height - 80 && !position; y += BRICK_HEIGHT + BRICK_ROW_GAP) {
+    for (let x = 0; x <= WIDTH - width; x += BRICK_WIDTH + BRICK_GAP) {
+      const candidate = { x, y, width, height };
+      if (!bricks.some((brick) => boxesTouch(candidate, brick))) {
+        position = candidate;
+        break;
+      }
+    }
+  }
+  if (!position) {
+    showGamePopup("NO OPEN SPACE FOR BLOCK", "warning");
+    showScreen("ready");
+    return;
+  }
+  bricks.push({
+    ...position,
+    row: Math.round((position.y - BRICKS_TOP) / (BRICK_HEIGHT + BRICK_ROW_GAP)),
+    type,
+    hits: type === "giant" ? 4 : type === "armored" ? 2 : 1,
+    adminSpawned: true
+  });
+  showGamePopup(`${type.toUpperCase()} BLOCK ADDED`, "power");
+  showScreen("ready");
+});
+document.getElementById("admin-fire-projectiles").addEventListener("click", () => {
+  if (gameMode !== "side-scroll") startGame("side-scroll", null, adminSelectedDirection);
+  spawnBrickProjectiles({
+    x: paddle.x + paddle.width / 2 - 24,
+    y: paddle.y - 100,
+    width: 48,
+    height: 18
+  });
+  showScreen("playing");
+});
+document.getElementById("admin-back").addEventListener("click", () => showScreen("settings"));
 document.getElementById("continue-button").addEventListener("click", () => {
   const saved = loadCampaignSave();
   if (saved) startGame("campaign", saved);

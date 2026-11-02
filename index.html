@@ -86,7 +86,45 @@
             <p id="account-message" aria-live="polite">Local profile. Scores are saved on this device.</p>
             <button class="secondary-button" type="submit">Save username</button>
           </form>
+          <button class="secondary-button" id="open-admin-panel" type="button">Testing Panel</button>
           <button class="primary-button" id="settings-back" type="button">Done</button>
+        </div>
+      </section>
+      <section class="screen" id="screen-admin" aria-labelledby="admin-title" hidden>
+        <div class="menu-panel admin-panel">
+          <p class="eyebrow">DEVELOPER TOOLS</p>
+          <h2 id="admin-title">TESTING PANEL</h2>
+          <div class="admin-direction-grid" role="group" aria-label="Side-scroll direction">
+            <button class="secondary-button" type="button" data-admin-direction="left" aria-pressed="true">Left</button>
+            <button class="secondary-button" type="button" data-admin-direction="right" aria-pressed="false">Right</button>
+            <button class="secondary-button" type="button" data-admin-direction="up" aria-pressed="false">Up</button>
+            <button class="secondary-button" type="button" data-admin-direction="down" aria-pressed="false">Down</button>
+          </div>
+          <label class="setting-row" for="admin-scroll-speed">
+            <span>Scroll speed</span>
+            <input id="admin-scroll-speed" type="range" min="0.2" max="3" step="0.1" value="0.7">
+          </label>
+          <label class="setting-row" for="admin-block-type">
+            <span>Block type</span>
+            <select id="admin-block-type">
+              <option value="normal">Normal</option>
+              <option value="armored">Armored</option>
+              <option value="giant">Giant</option>
+              <option value="heart">Heart</option>
+              <option value="grow">Grow</option>
+              <option value="poison">Poison</option>
+              <option value="slow">Slow</option>
+              <option value="jackpot">Jackpot</option>
+              <option value="bomb">Bomb</option>
+              <option value="prism">Prism</option>
+              <option value="projectile">Projectile</option>
+              <option value="shooter">Laser</option>
+            </select>
+          </label>
+          <button class="primary-button" id="admin-start-scroll" type="button">Start Side Scroll</button>
+          <button class="secondary-button" id="admin-spawn-block" type="button">Spawn Block</button>
+          <button class="secondary-button" id="admin-fire-projectiles" type="button">Fire Blue Volley</button>
+          <button class="text-button" id="admin-back" type="button">Back to Settings</button>
         </div>
       </section>
       <section class="screen" id="screen-pause" aria-labelledby="pause-title" hidden>
