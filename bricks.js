@@ -289,6 +289,12 @@ function spawnBrickProjectiles(brick) {
   }
 }
 
+function positionBrickBeam(beam) {
+  beam.x = beam.source.x + beam.source.width / 2 - beam.width / 2;
+  beam.y = beam.source.y + beam.source.height;
+  beam.height = Math.max(0, HEIGHT - beam.y);
+}
+
 function updateBrickWeapons(deltaTime) {
   updateBrickProjectiles(deltaTime);
 
@@ -299,12 +305,13 @@ function updateBrickWeapons(deltaTime) {
   }
 
   if (brickBeam) {
+    if (!bricks.includes(brickBeam.source)) {
+      brickBeam = null;
+      return;
+    }
+    positionBrickBeam(brickBeam);
     brickBeam.timer -= deltaTime;
     if (brickBeam.state === "charging") {
-      if (!bricks.includes(brickBeam.source)) {
-        brickBeam = null;
-        return;
-      }
       if (brickBeam.timer <= 0) {
         brickBeam.state = "firing";
         brickBeam.timer = LASER_FIRE_DURATION;
@@ -334,17 +341,17 @@ function updateBrickWeapons(deltaTime) {
   const source = shooters[Math.floor(Math.random() * shooters.length)];
 
   const width = LASER_WIDTH;
-  const x = Math.max(0, Math.min(WIDTH - width, source.x + source.width / 2 - width / 2));
   brickBeam = {
-    x,
-    y: source.y + source.height,
+    x: 0,
+    y: 0,
     width,
-    height: HEIGHT - source.y - source.height,
+    height: 0,
     source,
     state: "charging",
     timer: LASER_CHARGE_DURATION,
     hitPaddle: false
   };
+  positionBrickBeam(brickBeam);
 }
 
 function updateBrickProjectiles(deltaTime) {

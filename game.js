@@ -913,7 +913,7 @@ document.getElementById("admin-start-scroll").addEventListener("click", () => {
   startGame("side-scroll", null, adminSelectedDirection);
 });
 document.getElementById("admin-spawn-block").addEventListener("click", () => {
-  if (gameMode !== "side-scroll") startGame("side-scroll", null, adminSelectedDirection);
+  if (!gameMode) return;
   const type = document.getElementById("admin-block-type").value;
   const isGiant = type === "giant";
   const width = isGiant ? BRICK_WIDTH * 2 + BRICK_GAP : BRICK_WIDTH;
@@ -930,7 +930,6 @@ document.getElementById("admin-spawn-block").addEventListener("click", () => {
   }
   if (!position) {
     showGamePopup("NO OPEN SPACE FOR BLOCK", "warning");
-    showScreen("ready");
     return;
   }
   bricks.push({
@@ -941,17 +940,15 @@ document.getElementById("admin-spawn-block").addEventListener("click", () => {
     adminSpawned: true
   });
   showGamePopup(`${type.toUpperCase()} BLOCK ADDED`, "power");
-  showScreen("ready");
 });
 document.getElementById("admin-fire-projectiles").addEventListener("click", () => {
-  if (gameMode !== "side-scroll") startGame("side-scroll", null, adminSelectedDirection);
+  if (!gameMode) return;
   spawnBrickProjectiles({
     x: paddle.x + paddle.width / 2 - 24,
     y: paddle.y - 100,
     width: 48,
     height: 18
   });
-  showScreen("playing");
 });
 document.getElementById("admin-back").addEventListener("click", () => showScreen("settings"));
 document.getElementById("continue-button").addEventListener("click", () => {
