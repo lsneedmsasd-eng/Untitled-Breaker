@@ -4,6 +4,8 @@
 
 const BRICK_COLUMNS = 16;
 const SIDE_SCROLL_COLUMNS = BRICK_COLUMNS * 2;
+const SPIKE_ROW_SPACING = 10;
+const SPIKE_GAP_COLUMNS = 4;
 let sideScrollSpeed = 0.7;
 const BRICK_WIDTH = 48;
 const BRICK_HEIGHT = 18;
@@ -89,8 +91,18 @@ function makeBricks(currentWave, forcedSideScrollDirection = null) {
     );
   const giantTarget = currentWave >= 5 ? 3 : currentWave >= 3 ? 2 : 1;
   const allCells = Array.from({ length: rowCount * brickColumns }, (_, index) => index);
+  const spikeRows = verticalSideScroll
+    ? Array.from(
+      { length: Math.floor((rowCount - 8) / SPIKE_ROW_SPACING) },
+      (_, index) => 8 + index * SPIKE_ROW_SPACING
+    )
+    : [];
+  const spikeRowSet = new Set(spikeRows);
+  const availableCells = verticalSideScroll
+    ? allCells.filter((cell) => !spikeRowSet.has(Math.floor(cell / brickColumns)))
+    : allCells;
   const cells = verticalSideScroll
-    ? shuffle(allCells).slice(0, desiredCount).sort((first, second) => first - second)
+    ? shuffle(availableCells).slice(0, desiredCount).sort((first, second) => first - second)
     : allCells;
   const giantAnchors = shuffle(cells.filter((cell) =>
     cell % brickColumns < brickColumns - 1 &&
@@ -166,12 +178,35 @@ function makeBricks(currentWave, forcedSideScrollDirection = null) {
     });
   }
 
+  for (const row of spikeRows) {
+    const minimumGapStart = 4;
+    const maximumGapStart = brickColumns - SPIKE_GAP_COLUMNS - 4;
+    const gapStart = minimumGapStart + Math.floor(
+      Math.random() * (maximumGapStart - minimumGapStart + 1)
+    );
+    for (let col = 0; col < brickColumns; col++) {
+      if (col >= gapStart && col < gapStart + SPIKE_GAP_COLUMNS) continue;
+      list.push({
+        x: left + col * (BRICK_WIDTH + BRICK_GAP),
+        y: BRICKS_TOP + row * (BRICK_HEIGHT + BRICK_ROW_GAP),
+        row,
+        type: "spike",
+        hits: 1,
+        width: BRICK_WIDTH,
+        height: BRICK_HEIGHT
+      });
+    }
+  }
+
   prepareLevelScroll(list, currentWave);
   if (levelScrollDirection) {
     showGamePopup(`SCROLL LEVEL: ${levelScrollDirection.toUpperCase()}`, "warning");
   }
   if (gameMode === "side-scroll") {
-    showGamePopup(`SIDE SCROLL: ${sideScrollDirection.toUpperCase()}`, "warning");
+    const message = spikeRows.length > 0
+      ? "SPIKES INCOMING!"
+      : `SIDE SCROLL: ${sideScrollDirection.toUpperCase()}`;
+    showGamePopup(message, "warning");
   }
   return list;
 }
@@ -201,7 +236,9 @@ function updateSideScroll(deltaTime) {
 function drawBricks() {
   const colors = ["#ff765e", "#ffb454", "#f3d56c", "#71d4bd"];
   for (const brick of bricks) {
-    let color = brick.type === "heart"
+    let color = brick.type === "spike"
+      ? "#f06568"
+      : brick.type === "heart"
       ? "#f05b78"
       : brick.type === "grow"
         ? "#55cbb2"
@@ -236,7 +273,17 @@ function drawBricks() {
     ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
     ctx.fillRect(brick.x + 4, brick.y + 2, brick.width - 8, 2);
 
-    if (brick.type === "shooter") {
+    if (brick.type === "spike") {
+      ctx.fillStyle = "#511f2d";
+      ctx.beginPath();
+      for (let index = 0; index < 4; index++) {
+        const spikeX = brick.x + index * brick.width / 4;
+        ctx.moveTo(spikeX, brick.y + brick.height);
+        ctx.lineTo(spikeX + brick.width / 8, brick.y + 3);
+        ctx.lineTo(spikeX + brick.width / 4, brick.y + brick.height);
+      }
+      ctx.fill();
+    } else if (brick.type === "shooter") {
       ctx.fillStyle = "#fff0d1";
       ctx.fillRect(brick.x + brick.width / 2 - 5, brick.y + 6, 10, 3);
     } else if (brick.type === "projectile") {

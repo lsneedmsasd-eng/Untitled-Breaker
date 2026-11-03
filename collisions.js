@@ -17,8 +17,8 @@ function boxesTouch(a, b) {
 }
 
 
-// The ball bounces off the left, right, and top walls.
-// (The bottom is not a wall: falling off the bottom resets the ball.)
+// The ball bounces off the left, right, and top walls. Vertical side-scroll
+// waves wrap the ball between the top and bottom edges.
 function bounceOffWalls() {
   if (ball.x < 0) {
     ball.x = 0;
@@ -28,7 +28,12 @@ function bounceOffWalls() {
     ball.x = WIDTH - ball.width;
     ball.vx = -ball.vx;
   }
-  if (ball.y < 0) {
+  const verticalSideScroll = gameMode === "side-scroll" &&
+    ["up", "down"].includes(sideScrollDirection);
+  if (verticalSideScroll) {
+    if (ball.y < 0) ball.y = HEIGHT - ball.height;
+    if (ball.y + ball.height > HEIGHT) ball.y = 0;
+  } else if (ball.y < 0) {
     ball.y = 0;
     ball.vy = -ball.vy;
   }
@@ -61,7 +66,9 @@ function bounceOffPaddle() {
 }
 
 function activatePrismSweep(brick) {
-  const sweptBricks = bricks.filter((fieldBrick) => fieldBrick !== brick && fieldBrick.row === brick.row);
+  const sweptBricks = bricks.filter((fieldBrick) =>
+    fieldBrick !== brick && fieldBrick.type !== "spike" && fieldBrick.row === brick.row
+  );
   for (const fieldBrick of sweptBricks) {
     clearActiveAimForDestroyedTarget(fieldBrick);
     spawnBrickParticles(fieldBrick);
@@ -108,6 +115,9 @@ function detonateBomb(source) {
     const centerY = bomb.y + bomb.height / 2;
     for (const neighbor of [...bricks]) {
       if (!bricks.includes(neighbor)) {
+        continue;
+      }
+      if (neighbor.type === "spike") {
         continue;
       }
       const dx = neighbor.x + neighbor.width / 2 - centerX;
@@ -169,7 +179,9 @@ function bounceOffBricks() {
       }
     }
 
-    if (brick.hits > 1) {
+    if (brick.type === "spike") {
+      playSound("brick");
+    } else if (brick.hits > 1) {
       brick.hits--;
       playSound("brick");
         addScore(10);

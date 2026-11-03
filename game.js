@@ -323,6 +323,7 @@ function update() {
   updatePaddleSlow(STEP);
   movePaddle();
   updateSideScroll(STEP);
+  if (loseLifeIfPaddleHitsSpike()) return;
   updatePaddleGrow(STEP);
   updateBallSlow(STEP);
   updatePaddleShrink(STEP);
@@ -335,7 +336,7 @@ function update() {
   updateBrickWeapons(STEP);  // bricks.js
   updateParticles(STEP);
 
-  if (bricks.length === 0) {
+  if (countBreakableBricks() === 0) {
     startNextWave();
   }
 
@@ -383,6 +384,14 @@ function setPaddleWidth(width) {
   const center = paddle.x + paddle.width / 2;
   paddle.width = width;
   paddle.x = Math.max(0, Math.min(WIDTH - paddle.width, center - paddle.width / 2));
+}
+
+function countBreakableBricks() {
+  let count = 0;
+  for (const brick of bricks) {
+    if (brick.type !== "spike") count++;
+  }
+  return count;
 }
 
 function updatePaddleGrow(deltaTime) {
@@ -518,6 +527,7 @@ function drawParticles() {
 }
 
 function movePaddle() {
+  const previousX = paddle.x;
   const movementSpeed = paddle.speed * (paddleSlowTimer > 0 ? PADDLE_SLOW_FACTOR : 1);
   if (keys["arrowleft"] || keys["a"]) {
     paddle.x = paddle.x - movementSpeed;
@@ -533,6 +543,44 @@ function movePaddle() {
   if (paddle.x + paddle.width > WIDTH) {
     paddle.x = WIDTH - paddle.width;
   }
+  if (countPaddleSpikeOverlaps(paddle.x) > countPaddleSpikeOverlaps(previousX)) {
+    paddle.x = previousX;
+  }
+}
+
+function countPaddleSpikeOverlaps(x) {
+  let count = 0;
+  for (const brick of bricks) {
+    if (brick.type === "spike" &&
+      paddle.y < brick.y + brick.height &&
+      paddle.y + paddle.height > brick.y &&
+      x < brick.x + brick.width &&
+      x + paddle.width > brick.x) {
+      count++;
+    }
+  }
+  return count;
+}
+
+function findNearestSafePaddleX() {
+  let nearestX = paddle.x;
+  let nearestDistance = Infinity;
+  for (let x = 0; x <= WIDTH - paddle.width; x++) {
+    if (countPaddleSpikeOverlaps(x) !== 0) continue;
+    const distance = Math.abs(x - paddle.x);
+    if (distance < nearestDistance) {
+      nearestX = x;
+      nearestDistance = distance;
+    }
+  }
+  return nearestX;
+}
+
+function loseLifeIfPaddleHitsSpike() {
+  if (countPaddleSpikeOverlaps(paddle.x) === 0) return false;
+  paddle.x = findNearestSafePaddleX();
+  loseLife();
+  return true;
 }
 
 function moveBall() {
@@ -607,7 +655,7 @@ function draw() {
         : `LEVEL ${wave}/${CAMPAIGN_LEVELS}`;
   ctx.fillText(modeLabel, WIDTH / 2, 25);
   ctx.textAlign = "right";
-  ctx.fillText(`LIVES  ${lives}   BRICKS  ${bricks.length}`, WIDTH - 18, 25);
+  ctx.fillText(`LIVES  ${lives}   BRICKS  ${countBreakableBricks()}`, WIDTH - 18, 25);
   ctx.textAlign = "left";
   const centerStatuses = [];
   if (aimCooldown > 0) centerStatuses.push(`AIM ${Math.ceil(aimCooldown / 1000)}s`);
